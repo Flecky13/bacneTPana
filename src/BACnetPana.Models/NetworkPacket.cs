@@ -38,6 +38,9 @@ namespace bacneTPana.Models
         // Fragmentierungsstatus
         public bool IsReassembled { get; set; }
 
+        // BACnet: Anzahl der Objekte in einem ReadPropertyMultiple-Paket
+        public int BACnetObjectCount { get; set; } = 1;
+
         /// <summary>
         /// Gibt das anzuzeigende Protokoll zurück (bevorzugt ApplicationProtocol, sonst Protocol)
         /// </summary>

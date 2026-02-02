@@ -99,7 +99,8 @@ namespace bacneTPana.UI
                 StartTimeSlider.Value = 0;
                 EndTimeSlider.Value = _totalDuration;
 
-                UpdateChart();
+                // UpdateChart() wird automatisch durch ValueChanged-Events der Slider aufgerufen
+                // Direkter Aufruf hier entfernt, um doppelte Ausführung zu vermeiden
             }
         }
 
@@ -131,7 +132,6 @@ namespace bacneTPana.UI
             UpdateBACnetAnalysis(filteredPackets);
             UpdateBACnetServicesAnalysis(filteredPackets);
             UpdateBACnetReadPropertiesAnalysis(filteredPackets);
-            UpdateBACnetTopCovPackets(filteredPackets);
 
             if (StartTimeLabel != null)
                 StartTimeLabel.Text = $"{startOffset:F2} s";
@@ -614,41 +614,124 @@ namespace bacneTPana.UI
 
         private void UpdateBACnetReadPropertiesAnalysis(List<NetworkPacket> filteredPackets)
         {
+            // DEBUG: Schreibe in Output UND Konsole
+            var msg = $"========================================\nUpdateBACnetReadPropertiesAnalysis aufgerufen\n  Gesamt Pakete: {filteredPackets?.Count ?? 0}";
+            //System.Diagnostics.Debug.WriteLine(msg);
+            //Console.WriteLine(msg);
+            //System.Diagnostics.Trace.WriteLine(msg);
+
+            if (filteredPackets == null || filteredPackets.Count == 0)
+            {
+                //var abortMsg = "  ABBRUCH: Keine Pakete vorhanden!";
+                //System.Diagnostics.Debug.WriteLine(abortMsg);
+                //Console.WriteLine(abortMsg);
+                if (BACnetTopReadPropertyBorder != null)
+                    BACnetTopReadPropertyBorder.Visibility = Visibility.Collapsed;
+                return;
+            }
+
             var bacnetPackets = filteredPackets.Where(p =>
                 (p.ApplicationProtocol?.ToUpper() == "BACNET") ||
                 (p.DestinationPort >= 47808 && p.DestinationPort <= 47823) ||
                 (p.SourcePort >= 47808 && p.SourcePort <= 47823)).ToList();
 
+            var bacnetMsg = $"  BACnet Pakete: {bacnetPackets.Count}";
+            //System.Diagnostics.Debug.WriteLine(bacnetMsg);
+            //Console.WriteLine(bacnetMsg);
+
             if (bacnetPackets.Count == 0)
             {
+                //var noBacketMsg = "  ABBRUCH: Keine BACnet-Pakete gefunden!";
+                //System.Diagnostics.Debug.WriteLine(noBacketMsg);
+                //Console.WriteLine(noBacketMsg);
                 if (BACnetTopReadPropertyBorder != null)
                     BACnetTopReadPropertyBorder.Visibility = Visibility.Collapsed;
                 return;
             }
 
             var readPropertyGroups = new Dictionary<string, int>();
-            int totalReadPropertyCount = 0;
+            int totalReadPropertyCount = 0;  // Für Gruppierung (ohne Device-Objekte)
+            int totalReadPropertyRequests = 0;  // Gesamtzahl aller RP/RPM Confirmed-Requests (inkl. Device)
+            int debugCheckedPackets = 0;
+            int debugConfirmedReqCount = 0;
+            int debugReadPropServiceCount = 0;
+            int debugObjectType8Excluded = 0;
+            int debugNoObjectTypeFound = 0;
+            int debugServiceCode12 = 0;
+            int debugServiceCode14 = 0;
+
+            int debugRpmMultiObjectPackets = 0;  // Zähler für RPM-Pakete mit mehreren Objekten
+            int debugRpmMultiObjectCount = 0;     // Gesamtzahl der zusätzlichen Objekte in RPMs
+
+// Sample: Zeige die ersten 10 Pakete mit Details
+            //System.Diagnostics.Debug.WriteLine($"  --- Beispiel-Pakete (erste 10, besonders auf ServiceChoice achten) ---");
+            //int sampleCount = 0;
+            //foreach (var samplePacket in bacnetPackets)
+            //{
+            //    if (sampleCount < 10 && samplePacket.Details != null && samplePacket.Details.Count > 0)
+            //    {
+            //        System.Diagnostics.Debug.WriteLine($"  Paket #{samplePacket.PacketNumber}:");
+            //        if (samplePacket.Details.ContainsKey("BACnet Type"))
+            //            System.Diagnostics.Debug.WriteLine($"    BACnet Type: '{samplePacket.Details["BACnet Type"]}'");
+            //        else
+            //            System.Diagnostics.Debug.WriteLine($"    BACnet Type: NICHT VORHANDEN");
+
+            //        if (samplePacket.Details.ContainsKey("BACnet Confirmed Service Code"))
+            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service Code: '{samplePacket.Details["BACnet Confirmed Service Code"]}'");
+            //        else
+            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service Code: NICHT VORHANDEN");
+
+            //        if (samplePacket.Details.ContainsKey("BACnet Confirmed Service"))
+            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service: '{samplePacket.Details["BACnet Confirmed Service"]}'");
+            //        else
+            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service: NICHT VORHANDEN");
+
+            //        if (samplePacket.Details.ContainsKey("Object Type"))
+            //            System.Diagnostics.Debug.WriteLine($"    Object Type: '{samplePacket.Details["Object Type"]}'");
+            //        if (samplePacket.Details.ContainsKey("Instance Number"))
+            //            System.Diagnostics.Debug.WriteLine($"    Instance: '{samplePacket.Details["Instance Number"]}'");
+            //        if (samplePacket.Details.ContainsKey("Property"))
+            //            System.Diagnostics.Debug.WriteLine($"    Property: '{samplePacket.Details["Property"]}'");
+            //        sampleCount++;
+            //    }
+            //}
 
             foreach (var packet in bacnetPackets)
             {
                 if (packet.Details == null || packet.Details.Count == 0)
                     continue;
 
+                debugCheckedPackets++;
+
+                // Schritt 1: Prüfe ob es ein Confirmed-Request (PDU Type 0) ist
                 var isConfirmedReq = false;
-                if (packet.Details.ContainsKey("BACnet Confirmed Service"))
+                if (packet.Details.TryGetValue("BACnet Type", out var typeValue) && !string.IsNullOrWhiteSpace(typeValue))
                 {
-                    isConfirmedReq = true;
-                }
-                else if (packet.Details.TryGetValue("BACnet Type", out var typeValue) && !string.IsNullOrWhiteSpace(typeValue))
-                {
-                    var typeLower = typeValue.ToLowerInvariant();
-                    if (typeLower.Contains("confirmed"))
+                    // BACnet Type kann als Zahl oder Text kommen
+                    // PDU Type 0 = Confirmed-REQ
+                    if (typeValue == "0")
+                    {
                         isConfirmedReq = true;
+                    }
+                    else
+                    {
+                        var typeLower = typeValue.ToLowerInvariant();
+                        if (typeLower.Contains("confirmed-req") ||
+                            (typeLower.Contains("confirmed") && typeLower.Contains("request")))
+                        {
+                            isConfirmedReq = true;
+                        }
+                    }
                 }
 
                 if (!isConfirmedReq)
+                {
                     continue;
+                }
 
+                debugConfirmedReqCount++;
+
+                // Schritt 2: Prüfe ServiceChoice - ReadProperty (12) oder ReadPropertyMultiple (14)
                 var confirmedCode = GetServiceCode(packet.Details, "BACnet Confirmed Service Code", "BACnet Confirmed Service");
                 int? serviceCode = confirmedCode;
 
@@ -657,33 +740,126 @@ namespace bacneTPana.UI
                     serviceCode = GetServiceCode(packet.Details, "BACnet Service Code", "BACnet Service");
                 }
 
-                var isReadProperty = serviceCode.HasValue && serviceCode.Value == 12;
+                var isReadProperty = serviceCode.HasValue && (serviceCode.Value == 12 || serviceCode.Value == 14);
                 if (!isReadProperty && packet.Details.TryGetValue("BACnet Confirmed Service", out var confServiceText))
                 {
                     var svcLower = (confServiceText ?? string.Empty).ToLowerInvariant();
-                    if (svcLower.Contains("readproperty") || svcLower.Contains("read property") || svcLower.Contains("read-property"))
+                    if (svcLower.Contains("readpropertymultiple") || svcLower.Contains("read property multiple") || svcLower.Contains("read-property-multiple") ||
+                        svcLower.Contains("readproperty") || svcLower.Contains("read property") || svcLower.Contains("read-property"))
                         isReadProperty = true;
                 }
 
                 if (!isReadProperty)
+                {
                     continue;
+                }
+
+                debugReadPropServiceCount++;
+
+                // ★ SCHRITT: Behandle ReadPropertyMultiple (ServiceChoice 14) mit mehreren Objekten
+                // Diese MÜSSEN vor den normalen Object Type Filtern behandelt werden!
+                // WICHTIG: Prüfe auf "Object Types (All)" statt BACnetObjectCount, da dieser zurückgesetzt wird!
+                if (serviceCode == 14 &&
+                    packet.Details.TryGetValue("Object Types (All)", out var objTypesAll) &&
+                    packet.Details.TryGetValue("Instance Numbers (All)", out var instancesAll))
+                {
+                    //if (isSpecialCase)
+                    //    System.Diagnostics.Debug.WriteLine($"[SPECIAL-TRACE] Paket #{packet.PacketNumber}: RPM Multi-Objekt Path gefunden (hat (All)-Felder)");
+
+                    debugServiceCode14++;
+                    debugRpmMultiObjectPackets++;
+
+                    var types = objTypesAll.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
+                    var instances = instancesAll.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
+
+                    debugRpmMultiObjectCount += Math.Max(types.Count, instances.Count) - 1;
+
+                    int maxCount = Math.Max(types.Count, instances.Count);
+                    if (maxCount > 0)
+                    {
+                        if (types.Count == 0)
+                            types = Enumerable.Repeat("unbekannt", maxCount).ToList();
+                        else if (types.Count == 1 && maxCount > 1)
+                            types = Enumerable.Repeat(types[0], maxCount).ToList();
+
+                        if (instances.Count == 0)
+                            instances = Enumerable.Repeat("?", maxCount).ToList();
+                        else if (instances.Count == 1 && maxCount > 1)
+                            instances = Enumerable.Repeat(instances[0], maxCount).ToList();
+
+                        string sourceIpMulti = string.IsNullOrWhiteSpace(packet.SourceIp) ? "Unbekannt" : packet.SourceIp;
+                        string destIpMulti = string.IsNullOrWhiteSpace(packet.DestinationIp) ? "Unbekannt" : packet.DestinationIp;
+
+                        //System.Diagnostics.Debug.WriteLine($"[Multi-RPM] Paket #{packet.PacketNumber}: {maxCount} Objekte");
+
+                        for (int i = 0; i < Math.Min(types.Count, instances.Count); i++)
+                        {
+                            var objType = types[i];
+                            var instNum = instances[i];
+
+                            // Zähle ALLE Objekte für Gesamtstatistik
+                            totalReadPropertyRequests++;
+
+                            // Überspringe Device-Objekte (Type 8) nur für die Gruppierung
+                            if (objType == "8")
+                                continue;
+
+                            totalReadPropertyCount++;
+                            var multiKey = $"{sourceIpMulti} → {destIpMulti} | {objType},{instNum}";
+                            if (!readPropertyGroups.ContainsKey(multiKey))
+                                readPropertyGroups[multiKey] = 0;
+                            readPropertyGroups[multiKey]++;
+                        }
+
+                        //if (isSpecialCase)
+                        //    System.Diagnostics.Debug.WriteLine($"[SPECIAL-TRACE] Paket #{packet.PacketNumber}: RPM-Multi continue - überspringe restlichen Code");
+                        continue; // Nächstes Paket!
+                    }
+                }
+
+                // Zähle ServiceChoice 12 vs 14
+                if (serviceCode == 12)
+                    debugServiceCode12++;
+                else if (serviceCode == 14)
+                    debugServiceCode14++;
+
+                // Zähle dieses Paket für Gesamtstatistik (wird nur einmal pro Paket gezählt)
+                totalReadPropertyRequests++;
+
+                // Schritt 3: Lese Object Type und Instance Number aus
+                packet.Details.TryGetValue("Object Type", out var objectType);
+                packet.Details.TryGetValue("Instance Number", out var instanceNumber);
+
+                // Zähle wenn Object Type fehlt
+                if (string.IsNullOrWhiteSpace(objectType))
+                {
+                    debugNoObjectTypeFound++;
+                }
+
+                // Schritt 4: Schließe Object Type 8 (device) aus
+                if (!string.IsNullOrWhiteSpace(objectType))
+                {
+                    // Prüfe ob es Type 8 ist (numerisch oder als Text "device")
+                    var objTypeLower = objectType.ToLowerInvariant();
+                    if (objectType == "8" || objTypeLower.Contains("device"))
+                    {
+                        debugObjectType8Excluded++;
+                        continue;
+                    }
+                }
 
                 totalReadPropertyCount++;
 
                 var sourceIp = string.IsNullOrWhiteSpace(packet.SourceIp) ? "Unbekannt" : packet.SourceIp;
                 var destIp = string.IsNullOrWhiteSpace(packet.DestinationIp) ? "Unbekannt" : packet.DestinationIp;
 
-                packet.Details.TryGetValue("Object Type", out var objectType);
-                packet.Details.TryGetValue("Instance Number", out var instanceNumber);
-                packet.Details.TryGetValue("Property", out var propertyId);
-
                 objectType = string.IsNullOrWhiteSpace(objectType) ? "unbekannt" : objectType;
                 instanceNumber = string.IsNullOrWhiteSpace(instanceNumber) ? "?" : instanceNumber;
-                propertyId = string.IsNullOrWhiteSpace(propertyId) ? "property" : propertyId;
 
-                var who = $"{sourceIp} → {destIp}";
-                var what = $"{objectType},{instanceNumber} {propertyId}";
-                var key = $"{who} | {what}";
+                // Schritt 5: Gruppiere nach Quelle-IP + Ziel-IP + Object Type + Instance
+                // WICHTIG: Service Code (12 vs 14) wird NICHT berücksichtigt,
+                // d.h. ReadProperty und ReadPropertyMultiple zur gleichen Instanz werden zusammengezählt
+                var key = $"{sourceIp} → {destIp} | {objectType},{instanceNumber}";
 
                 if (!readPropertyGroups.ContainsKey(key))
                     readPropertyGroups[key] = 0;
@@ -695,6 +871,46 @@ namespace bacneTPana.UI
                 .OrderByDescending(x => x.Count)
                 .Take(10)
                 .ToList();
+
+            //// Debug-Info: Zeige Filterung-Statistik
+            System.Diagnostics.Debug.WriteLine($"");
+            System.Diagnostics.Debug.WriteLine($"╔════════════════════════════════════════════════════════════════════════════╗");
+            System.Diagnostics.Debug.WriteLine($"║         ReadProperty/ReadPropertyMultiple ANALYSE - STATISTIK             ║");
+            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
+            System.Diagnostics.Debug.WriteLine($"║ 1. PAKET-FILTERUNG                                                         ║");
+            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
+            System.Diagnostics.Debug.WriteLine($"║   Gesamt BACnet-Pakete:              {bacnetPackets.Count,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   Geprüfte Pakete:                   {debugCheckedPackets,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   → Confirmed-Request (Type 0):      {debugConfirmedReqCount,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   → Mit ServiceChoice 12/14:         {debugReadPropServiceCount,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
+            System.Diagnostics.Debug.WriteLine($"║ 2. SERVICE-VERTEILUNG                                                      ║");
+            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
+            System.Diagnostics.Debug.WriteLine($"║   ReadProperty (SC 12):              {debugServiceCode12,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   ReadPropertyMultiple (SC 14):      {debugServiceCode14,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
+            System.Diagnostics.Debug.WriteLine($"║ 3. MULTI-OBJEKT RPM EXTRAKTION                                             ║");
+            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
+            System.Diagnostics.Debug.WriteLine($"║   RPM-Pakete mit >1 Objekt:          {debugRpmMultiObjectPackets,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   Zusätzliche Objekte extrahiert:    {debugRpmMultiObjectCount,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
+            System.Diagnostics.Debug.WriteLine($"║ 4. AUSSCHLÜSSE & FINALE ZÄHLUNG                                            ║");
+            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
+            System.Diagnostics.Debug.WriteLine($"║   Pakete ohne Object Type:           {debugNoObjectTypeFound,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   Object Type 8 (Device) excluded:   {debugObjectType8Excluded,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   Finale Pakete gezählt:             {totalReadPropertyCount,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   GESAMT RP/RPM Requests (SC12+14):  {debugServiceCode12 + debugServiceCode14,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"║   Unique IP/Instanz Kombinationen:   {readPropertyGroups.Count,8}                           ║");
+            System.Diagnostics.Debug.WriteLine($"╚════════════════════════════════════════════════════════════════════════════╝");
+            System.Diagnostics.Debug.WriteLine($"");
+
+            //// Debug: Zeige die TOP 10 Pakete
+            //System.Diagnostics.Debug.WriteLine("=== TOP 10 ReadProperty Anfragen ===");
+            //for (int i = 0; i < topReadProps.Count; i++)
+            //{
+            //    System.Diagnostics.Debug.WriteLine($"  {i + 1}. {topReadProps[i].Label} - {topReadProps[i].Count}x");
+            //}
+            //System.Diagnostics.Debug.WriteLine("====================================");
 
             if (topReadProps.Count == 0)
             {
@@ -714,10 +930,13 @@ namespace bacneTPana.UI
                 durationSeconds = Math.Max(1e-6, (maxTs - minTs).TotalSeconds);
             }
             var durationMinutes = durationSeconds / 60.0;
-            var perMinute = durationMinutes > 0 ? totalReadPropertyCount / durationMinutes : 0;
+
+            // Verwende die Summe der bereits gezählten Service Codes 12 + 14
+            int totalRpRpmRequests = debugServiceCode12 + debugServiceCode14;
+            var perMinute = durationMinutes > 0 ? totalRpRpmRequests / durationMinutes : 0;
 
             if (TopReadPropertyCountLabel != null)
-                TopReadPropertyCountLabel.Text = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} Total - {1:F2}/min", totalReadPropertyCount, perMinute);
+                TopReadPropertyCountLabel.Text = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} Total - {1:F2}/min", totalRpRpmRequests, perMinute);
 
             var topReadPropsWithRate = topReadProps.Select(x => new
             {
@@ -733,7 +952,7 @@ namespace bacneTPana.UI
 
             var model = new PlotModel
             {
-                Title = "Top ReadProperty Wiederholungen",
+                Title = "Top ReadProperty/ReadPropertyMultiple Wiederholungen",
                 Background = OxyColors.White
             };
 
@@ -838,7 +1057,11 @@ namespace bacneTPana.UI
             if (itemsSource == null || index >= itemsSource.Count)
                 return;
 
-            dynamic item = itemsSource[index];
+            var itemObj = itemsSource[index];
+            if (itemObj == null)
+                return;
+
+            dynamic item = itemObj;
             try
             {
                 int count = (int)item.Count;
@@ -1055,197 +1278,5 @@ namespace bacneTPana.UI
             return false;
         }
 
-        private void UpdateBACnetTopCovPackets(List<NetworkPacket> filteredPackets)
-        {
-            if (_bacnetDb == null)
-            {
-                if (BACnetTopCovPacketsBorder != null)
-                    BACnetTopCovPacketsBorder.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            // Berechne die aktuelle Zeitspanne der gefilterten Pakete
-            var duration = _totalDuration;
-            if (StartTimeSlider != null && EndTimeSlider != null)
-            {
-                duration = EndTimeSlider.Value - StartTimeSlider.Value;
-            }
-
-            var topCovPackets = _bacnetDb.GetTop10CovPackets(filteredPackets, out int totalCovCount, duration);
-
-            if (topCovPackets.Count == 0)
-            {
-                if (BACnetTopCovPacketsBorder != null)
-                    BACnetTopCovPacketsBorder.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            if (BACnetTopCovPacketsBorder != null)
-                BACnetTopCovPacketsBorder.Visibility = Visibility.Visible;
-
-            // Zeige Gesamtanzahl mit Durchschnitt /min
-            if (TopCovPacketsCountLabel != null)
-            {
-                double ratePerMinute = duration > 0 ? (totalCovCount / duration) * 60 : 0;
-                TopCovPacketsCountLabel.Text = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} Total - {1:F2}/min", totalCovCount, ratePerMinute);
-            }
-
-            var formattedCovPackets = topCovPackets
-                .Select(x =>
-                {
-                    var count = (int)x.Count;
-                    var ratePerMinute = duration > 0 ? (count / duration) * 60.0 : 0.0;
-                    var percentage = totalCovCount > 0 ? (count * 100.0) / totalCovCount : 0.0;
-                    return new
-                    {
-                        CovPacket = x.DisplayFormat,
-                        Count = count,
-                        RatePerMinute = ratePerMinute,
-                        Percentage = percentage,
-                        DisplayValue = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} ({1:F1}%)", count, percentage)
-                    };
-                })
-                .OrderByDescending(x => x.Count)
-                .ToList();
-
-            var barHeight = 22;
-            var desiredHeight = Math.Max(10, formattedCovPackets.Count) * barHeight;
-
-            var topCovModel = new PlotModel
-            {
-                Title = "COV-Pakete (Top 10)",
-                Background = OxyColors.White
-            };
-
-            var categoryAxis = new CategoryAxis
-            {
-                Position = AxisPosition.Left,
-                ItemsSource = formattedCovPackets,
-                LabelField = "CovPacket",
-                GapWidth = 0.5
-            };
-            topCovModel.Axes.Add(categoryAxis);
-
-            var valueAxis = new LinearAxis
-            {
-                Position = AxisPosition.Bottom,
-                Title = "Anzahl Pakete",
-                MinimumPadding = 0,
-                AbsoluteMinimum = 0,
-                MajorGridlineStyle = LineStyle.Solid,
-                MinorGridlineStyle = LineStyle.Dot,
-                MajorGridlineColor = OxyColor.FromRgb(220, 220, 220),
-                MinorGridlineColor = OxyColor.FromRgb(240, 240, 240)
-            };
-            topCovModel.Axes.Add(valueAxis);
-
-            if (TopCovPacketsChart != null)
-            {
-                TopCovPacketsChart.Height = desiredHeight;
-            }
-
-            var series = new BarSeries
-            {
-                FillColor = OxyColor.FromRgb(255, 165, 0),
-                StrokeColor = OxyColor.FromRgb(255, 140, 0),
-                StrokeThickness = 1,
-                BarWidth = 0.6,
-                LabelPlacement = LabelPlacement.Inside,
-                LabelMargin = 2,
-                TextColor = OxyColors.White
-            };
-
-            topCovModel.Annotations.Clear();
-            for (int i = 0; i < formattedCovPackets.Count; i++)
-            {
-                var item = formattedCovPackets[i];
-                var barItem = new BarItem
-                {
-                    Value = item.Count,
-                    CategoryIndex = i
-                };
-                series.Items.Add(barItem);
-
-                var annotation = new OxyPlot.Annotations.TextAnnotation
-                {
-                    Text = item.DisplayValue,
-                    TextPosition = new DataPoint(item.Count / 2.0, i),
-                    TextHorizontalAlignment = OxyPlot.HorizontalAlignment.Center,
-                    TextVerticalAlignment = OxyPlot.VerticalAlignment.Middle,
-                    TextColor = OxyColors.White,
-                    Stroke = OxyColors.Transparent,
-                    StrokeThickness = 0,
-                    FontSize = 11,
-                    FontWeight = OxyPlot.FontWeights.Bold
-                };
-                topCovModel.Annotations.Add(annotation);
-            }
-            topCovModel.Series.Add(series);
-
-            if (TopCovPacketsChart != null)
-            {
-                TopCovPacketsChart.Model = topCovModel;
-                TopCovPacketsChart.Controller = _noWheelController;
-            }
-
-            if (TopCovPacketsInfoLabel != null)
-            {
-                TopCovPacketsInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum COV-Paket.";
-            }
-        }
-
-        private void TopCovPacketsChart_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (TopCovPacketsChart?.Model == null)
-                return;
-
-            var model = TopCovPacketsChart.Model;
-            var categoryAxis = model.Axes.FirstOrDefault(a => a is CategoryAxis) as CategoryAxis;
-            if (categoryAxis == null)
-                return;
-
-            var pos = e.GetPosition(TopCovPacketsChart);
-            var yData = categoryAxis.InverseTransform(pos.Y);
-            var series = model.Series.OfType<BarSeries>().FirstOrDefault();
-            if (series == null || series.Items.Count == 0)
-                return;
-
-            var index = (int)Math.Round(yData);
-            index = Math.Max(0, Math.Min(series.Items.Count - 1, index));
-
-            var itemsSource = (categoryAxis.ItemsSource as System.Collections.IList);
-            if (itemsSource == null || index >= itemsSource.Count)
-                return;
-
-            dynamic item = itemsSource[index];
-            try
-            {
-                int count = (int)item.Count;
-                double percentage = (double)item.Percentage;
-                double perMinute = (double)item.RatePerMinute;
-                string covPacket = (string)item.CovPacket;
-
-                var info = $"COV-Paket: {covPacket}\n" +
-                           $"Gesamt: {count}\n" +
-                           $"Durchschnitt: {perMinute:F2}/Min\n" +
-                           $"Rel. Verteilung: {percentage:F1}%";
-
-                if (TopCovPacketsInfoLabel != null)
-                    TopCovPacketsInfoLabel.Text = info;
-            }
-            catch
-            {
-                if (TopCovPacketsInfoLabel != null)
-                    TopCovPacketsInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum COV-Paket.";
-            }
-        }
-
-        private void TopCovPacketsChart_MouseLeave(object sender, MouseEventArgs e)
-        {
-            if (TopCovPacketsInfoLabel != null)
-            {
-                TopCovPacketsInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum COV-Paket.";
-            }
-        }
     }
 }

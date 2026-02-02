@@ -593,6 +593,17 @@ namespace bacneTPana.DataAccess
 
             packet.ApplicationProtocol = "BACnet";
 
+            // BVLC Original Source IP (z.B. bei forwarded/broadcasted BACnet/IP)
+            string bvlcOriginalIp = GetStringField(layers, "bvlc.original-ip");
+            if (string.IsNullOrEmpty(bvlcOriginalIp))
+                bvlcOriginalIp = GetStringField(layers, "bvlc.original_ip");
+            if (string.IsNullOrEmpty(bvlcOriginalIp))
+                bvlcOriginalIp = GetStringField(layers, "bvlc.original-ipv4");
+            if (string.IsNullOrEmpty(bvlcOriginalIp))
+                bvlcOriginalIp = GetStringField(layers, "bvlc.original-ipv6");
+            if (!string.IsNullOrEmpty(bvlcOriginalIp))
+                packet.Details["BVLC Original IP"] = bvlcOriginalIp;
+
             // Extrahiere BACnet-Details
             string serviceType = GetStringField(layers, "bacapp.type");
             // Service kann confirmed oder unconfirmed sein
@@ -650,6 +661,71 @@ namespace bacneTPana.DataAccess
 
             if (!string.IsNullOrEmpty(propertyId))
                 packet.Details["Property"] = propertyId;
+
+            // Bei ReadPropertyMultiple (ServiceChoice 14): Extrahiere ALLE Objekte
+            // WICHTIG: ParseBACnetDetails() wird mehrfach pro Paket aufgerufen (für verschiedene BACnet-Layer)
+            // Daher speichern wir nur die beste Version (mit den meisten Objekten)
+
+            var objectTypes = GetArrayValues(layers, "bacapp.objectType");
+            var instanceNumbers = GetArrayValues(layers, "bacapp.instance_number");
+
+            // DEBUG: Zeige was TShark zurückgibt
+            //if (packet.PacketNumber <= 10 || objectTypes.Count > 1 || instanceNumbers.Count > 1)
+            //{
+            //    System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}:");
+            //    System.Diagnostics.Debug.WriteLine($"  ObjectTypes Count: {objectTypes.Count} => [{string.Join(", ", objectTypes)}]");
+            //    System.Diagnostics.Debug.WriteLine($"  Instances Count: {instanceNumbers.Count} => [{string.Join(", ", instanceNumbers)}]");
+            //    System.Diagnostics.Debug.WriteLine($"  Service: {service}, ServiceCode: {(TryParseServiceCode(service, out var sc) ? sc.ToString() : "null")}");
+            //}
+
+            // Fallback: falls nur Einzelwerte vorhanden sind, für RPM sauber auffüllen
+            if (objectTypes.Count == 0 && !string.IsNullOrEmpty(objectType))
+                objectTypes.Add(objectType);
+            if (instanceNumbers.Count == 0 && !string.IsNullOrEmpty(instanceNumber))
+                instanceNumbers.Add(instanceNumber);
+
+            int maxCount = Math.Max(objectTypes.Count, instanceNumbers.Count);
+
+            // Nur überschreiben, wenn diese Version mehr Objekte hat als die bisherige
+            if (maxCount > 1)
+            {
+                int currentCount = packet.BACnetObjectCount;
+
+                // Falls nur eine Liste Mehrfachwerte hat, repliziere den Einzelwert
+                if (objectTypes.Count == 0)
+                    objectTypes = Enumerable.Repeat("unbekannt", maxCount).ToList();
+                else if (objectTypes.Count == 1 && maxCount > 1)
+                    objectTypes = Enumerable.Repeat(objectTypes[0], maxCount).ToList();
+
+                if (instanceNumbers.Count == 0)
+                    instanceNumbers = Enumerable.Repeat("?", maxCount).ToList();
+                else if (instanceNumbers.Count == 1 && maxCount > 1)
+                    instanceNumbers = Enumerable.Repeat(instanceNumbers[0], maxCount).ToList();
+
+                // Speichere nur wenn diese Version besser ist (mehr Objekte)
+                if (maxCount > currentCount)
+                {
+                    packet.BACnetObjectCount = maxCount;
+
+                    // Speichere alle ObjectTypes und Instances als kommaseparierte Liste
+                    packet.Details["Object Types (All)"] = string.Join(",", objectTypes);
+                    packet.Details["Instance Numbers (All)"] = string.Join(",", instanceNumbers);
+
+                    //System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}: BACnetObjectCount gesetzt auf {maxCount}");
+                }
+                else
+                {
+                    //System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}: NICHT gesetzt (maxCount={maxCount} <= currentCount={currentCount})");
+                }
+            }
+            else
+            {
+                // maxCount <= 1
+                if (packet.BACnetObjectCount > 1)
+                {
+                    //System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}: ACHTUNG - BACnetObjectCount war {packet.BACnetObjectCount}, aber maxCount={maxCount} (<= 1)");
+                }
+            }
 
             if (!string.IsNullOrEmpty(vendorId))
                 packet.Details["Vendor ID"] = vendorId;
@@ -728,6 +804,33 @@ namespace bacneTPana.DataAccess
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Extrahiert ALLE Werte eines Arrays als Liste (für ObjectType/Instance bei RPM)
+        /// </summary>
+        private List<string> GetArrayValues(JsonElement layers, string fieldName)
+        {
+            var result = new List<string>();
+            if (layers.TryGetProperty(fieldName, out JsonElement element))
+            {
+                if (element.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        var val = item.GetString();
+                        if (!string.IsNullOrEmpty(val))
+                            result.Add(val);
+                    }
+                }
+                else if (element.ValueKind == JsonValueKind.String)
+                {
+                    var val = element.GetString();
+                    if (!string.IsNullOrEmpty(val))
+                        result.Add(val);
+                }
+            }
+            return result;
         }
 
         private int GetIntField(JsonElement layers, string fieldName, int defaultValue)

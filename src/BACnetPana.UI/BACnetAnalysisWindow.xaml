@@ -506,7 +506,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="ReadProperty (Top 10 Wiederholungen)" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="ReadProperty/ReadPropertyMultiple (Top 10 Wiederholungen)" FontWeight="Bold" Margin="0,0,0,6"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TopReadPropertyCountLabel" Text="Einträge: 0" HorizontalAlignment="Right" FontWeight="Bold" Foreground="#6f42c1"/>
 
                                     <oxy:PlotView Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" x:Name="ReadPropertyTopChart" Height="240" Margin="0,6,0,0" PreviewMouseWheel="PlotView_PreviewMouseWheel" MouseMove="ReadPropertyTopChart_MouseMove" MouseLeave="ReadPropertyTopChart_MouseLeave" />
@@ -517,30 +517,6 @@
                                 </Grid>
                             </Border>
 
-                            <!-- BACnet Top COV Packets Section -->
-                            <Border x:Name="BACnetTopCovPacketsBorder" Background="White" BorderBrush="#FFA500" BorderThickness="2" Padding="15" Margin="0,8,0,0" MinHeight="280" Visibility="Visible">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="COV-Pakete (Top 10)" FontWeight="Bold" Margin="0,0,0,6" Foreground="#FF8C00"/>
-                                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TopCovPacketsCountLabel" Text="Einträge: 0" HorizontalAlignment="Right" FontWeight="Bold" Foreground="#FF8C00"/>
-
-                                    <oxy:PlotView Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" x:Name="TopCovPacketsChart" Height="240" Margin="0,6,0,0" PreviewMouseWheel="PlotView_PreviewMouseWheel" MouseMove="TopCovPacketsChart_MouseMove" MouseLeave="TopCovPacketsChart_MouseLeave" />
-
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" x:Name="TopCovPacketsInfoLabel" Text="Bewegen Sie die Maus über die Balken, um Details anzuzeigen..." Margin="0,8,0,0" Foreground="#999" FontSize="11" TextWrapping="Wrap" MinHeight="40" FontStyle="Italic" />
-
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Text="Format: Device-Instance - Object-Type,Instance | Object-Type,Instance" Margin="0,4,0,0" Foreground="#555" FontStyle="Italic" FontSize="10" />
-                                </Grid>
-                            </Border>
                         </StackPanel>
                     </Border>
                 </StackPanel>
