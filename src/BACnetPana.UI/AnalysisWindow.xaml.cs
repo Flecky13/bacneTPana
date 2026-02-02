@@ -1,4 +1,4 @@
-using bacneTPana.Models;
+﻿using bacneTPana.Models;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -24,7 +24,6 @@ namespace bacneTPana.UI
             InitializeComponent();
             _packets = packets ?? new List<NetworkPacket>();
             _activeFilter = activeFilter ?? string.Empty;
-
 
             ConfigurePlotController();
 
@@ -75,9 +74,9 @@ namespace bacneTPana.UI
             else
             {
                 if (SummaryStartDateTimeLabel != null)
-                    SummaryStartDateTimeLabel.Text = "—";
+                    SummaryStartDateTimeLabel.Text = "â€”";
                 if (SummaryEndDateTimeLabel != null)
-                    SummaryEndDateTimeLabel.Text = "—";
+                    SummaryEndDateTimeLabel.Text = "â€”";
             }
 
             // Update UI
@@ -101,15 +100,15 @@ namespace bacneTPana.UI
 
         private void UpdateChart()
         {
-            // Prüfe, ob die Pakete vorhanden sind
+            // PrÃ¼fe, ob die Pakete vorhanden sind
             if (_packets == null || _packets.Count == 0)
                 return;
 
-            // Prüfe, ob die Slider initialisiert sind
+            // PrÃ¼fe, ob die Slider initialisiert sind
             if (StartTimeSlider == null || EndTimeSlider == null)
                 return;
 
-            // Hole die ausgewählte Zeitspanne
+            // Hole die ausgewÃ¤hlte Zeitspanne
             var startOffset = StartTimeSlider.Value;
             var endOffset = EndTimeSlider.Value;
 
@@ -284,7 +283,7 @@ namespace bacneTPana.UI
             };
             broadcastModel.Axes.Add(valueAxis);
 
-            // Höhe setzen, damit ScrollViewer ggf. scrollt
+            // HÃ¶he setzen, damit ScrollViewer ggf. scrollt
             if (BroadcastChart != null)
             {
                 BroadcastChart.Height = desiredHeight;
@@ -323,7 +322,7 @@ namespace bacneTPana.UI
 
         private void UpdateTcpAnalysis(List<NetworkPacket> filteredPackets)
         {
-            // Zähle TCP-Pakete und analysiere TCP-Probleme
+            // ZÃ¤hle TCP-Pakete und analysiere TCP-Probleme
             var tcpPackets = filteredPackets.Where(p => p.Protocol?.ToUpper() == "TCP").ToList();
 
             if (tcpPackets.Count == 0)
@@ -338,7 +337,7 @@ namespace bacneTPana.UI
             if (TcpAnalysisBorder != null)
                 TcpAnalysisBorder.Visibility = Visibility.Visible;
 
-            // Zähle TCP-Probleme aus Details dictionary
+            // ZÃ¤hle TCP-Probleme aus Details dictionary
             var retransmissionCount = 0;
             var duplicateAckCount = 0;
             var fastRetransmissionCount = 0;
@@ -440,15 +439,11 @@ namespace bacneTPana.UI
 
         private Brush GetAmpelBrush(double percent)
         {
-            // 🟢 Grün < 1%, 🟡 Gelb 1–3%, 🔴 Rot > 3%
-            if (percent < 1.0) return new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // Grün
+            // ðŸŸ¢ GrÃ¼n < 1%, ðŸŸ¡ Gelb 1â€“3%, ðŸ”´ Rot > 3%
+            if (percent < 1.0) return new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // GrÃ¼n
             if (percent <= 3.0) return new SolidColorBrush(Color.FromRgb(0xFF, 0xC1, 0x07)); // Gelb
             return new SolidColorBrush(Color.FromRgb(0xD1, 0x34, 0x38)); // Rot
         }
-
-
-
-
 
         private List<DataPoint> CalculatePacketsPerSecond(List<NetworkPacket> packets, DateTime startTime, DateTime endTime)
         {
@@ -491,7 +486,7 @@ namespace bacneTPana.UI
 
         private void StartTimeSlider_ValueChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<double> e)
         {
-            // Stelle sicher, dass Start nicht über Ende hinausgeht
+            // Stelle sicher, dass Start nicht Ã¼ber Ende hinausgeht
             if (EndTimeSlider != null && StartTimeSlider != null && StartTimeSlider.Value > EndTimeSlider.Value)
             {
                 EndTimeSlider.Value = StartTimeSlider.Value;
@@ -508,8 +503,6 @@ namespace bacneTPana.UI
             }
             DebounceUpdateChart();
         }
-
-
 
         private void DebounceUpdateChart()
         {
@@ -537,7 +530,7 @@ namespace bacneTPana.UI
             return $"{bytes} B";
         }
 
-        // Verhindert Zoom/Pan per Maus-/Strg+Mausrad und leitet das Ereignis an den übergeordneten ScrollViewer weiter
+        // Verhindert Zoom/Pan per Maus-/Strg+Mausrad und leitet das Ereignis an den Ã¼bergeordneten ScrollViewer weiter
         private void PlotView_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             e.Handled = true; // Chart soll nicht scrollen/zoomen
@@ -570,6 +563,7 @@ namespace bacneTPana.UI
             return null;
         }
 
-
     }
 }
+
+

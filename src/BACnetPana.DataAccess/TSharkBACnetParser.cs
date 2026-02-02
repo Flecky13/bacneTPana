@@ -672,10 +672,6 @@ namespace bacneTPana.DataAccess
             // DEBUG: Zeige was TShark zurückgibt
             //if (packet.PacketNumber <= 10 || objectTypes.Count > 1 || instanceNumbers.Count > 1)
             //{
-            //    System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}:");
-            //    System.Diagnostics.Debug.WriteLine($"  ObjectTypes Count: {objectTypes.Count} => [{string.Join(", ", objectTypes)}]");
-            //    System.Diagnostics.Debug.WriteLine($"  Instances Count: {instanceNumbers.Count} => [{string.Join(", ", instanceNumbers)}]");
-            //    System.Diagnostics.Debug.WriteLine($"  Service: {service}, ServiceCode: {(TryParseServiceCode(service, out var sc) ? sc.ToString() : "null")}");
             //}
 
             // Fallback: falls nur Einzelwerte vorhanden sind, für RPM sauber auffüllen
@@ -711,11 +707,9 @@ namespace bacneTPana.DataAccess
                     packet.Details["Object Types (All)"] = string.Join(",", objectTypes);
                     packet.Details["Instance Numbers (All)"] = string.Join(",", instanceNumbers);
 
-                    //System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}: BACnetObjectCount gesetzt auf {maxCount}");
                 }
                 else
                 {
-                    //System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}: NICHT gesetzt (maxCount={maxCount} <= currentCount={currentCount})");
                 }
             }
             else
@@ -723,7 +717,6 @@ namespace bacneTPana.DataAccess
                 // maxCount <= 1
                 if (packet.BACnetObjectCount > 1)
                 {
-                    //System.Diagnostics.Debug.WriteLine($"[PARSER] Paket #{packet.PacketNumber}: ACHTUNG - BACnetObjectCount war {packet.BACnetObjectCount}, aber maxCount={maxCount} (<= 1)");
                 }
             }
 
@@ -858,3 +851,4 @@ namespace bacneTPana.DataAccess
         }
     }
 }
+

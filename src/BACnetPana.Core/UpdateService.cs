@@ -1,10 +1,10 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 
 namespace bacneTPana.Core
 {
     /// <summary>
-    /// Service für Update-Überprüfung gegen GitHub Releases
+    /// Service fÃ¼r Update-ÃœberprÃ¼fung gegen GitHub Releases
     /// </summary>
     public class UpdateService
     {
@@ -46,7 +46,7 @@ namespace bacneTPana.Core
         }
 
         /// <summary>
-        /// Prüft die neueste verfügbare Version auf GitHub
+        /// PrÃ¼ft die neueste verfÃ¼gbare Version auf GitHub
         /// </summary>
         public async Task<VersionInfo> CheckForUpdatesAsync()
         {
@@ -63,32 +63,25 @@ namespace bacneTPana.Core
                 httpClient.Timeout = TimeSpan.FromSeconds(10);
                 httpClient.DefaultRequestHeaders.Add("User-Agent", $"{AppName}/{CurrentVersion}");
 
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Prüfe auf Updates... CurrentVersion: {CurrentVersion}");
-
                 // Versuche zuerst latest endpoint
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Versuche /latest endpoint");
                 var json = await TryGetReleaseJson(httpClient, GitHubApiLatestUrl);
 
                 // Falls leer (z.B. nur Drafts/Pre-releases), versuche alle releases
                 if (string.IsNullOrEmpty(json))
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateService] /latest leer, versuche alle releases");
                     json = await TryGetReleaseJsonFromAll(httpClient, GitHubApiAllReleasesUrl);
                 }
 
                 if (string.IsNullOrEmpty(json))
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateService] Keine Release-Daten gefunden");
                     return versionInfo;
                 }
 
                 // Parse JSON
                 ParseReleaseInfo(json, versionInfo);
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Fehler beim Update-Check: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Stack-Trace: {ex.StackTrace}");
             }
 
             return versionInfo;
@@ -105,17 +98,14 @@ namespace bacneTPana.Core
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"[UpdateService] Response von {url}: {json.Length} Bytes");
                     return json;
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateService] Fehler bei {url}: {response.StatusCode}");
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Fehler beim Abrufen von {url}: {ex.Message}");
             }
 
             return string.Empty;
@@ -131,12 +121,10 @@ namespace bacneTPana.Core
                 var response = await httpClient.GetAsync(url);
                 if (!response.IsSuccessStatusCode)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateService] Fehler bei {url}: {response.StatusCode}");
                     return string.Empty;
                 }
 
                 var json = await response.Content.ReadAsStringAsync();
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Response von {url}: {json.Length} Bytes");
 
                 using var jsonDoc = JsonDocument.Parse(json);
                 var root = jsonDoc.RootElement;
@@ -154,17 +142,15 @@ namespace bacneTPana.Core
 
                         if (!isDraft && release.TryGetProperty("tag_name", out _))
                         {
-                            // Gib diese Release als JSON zurück
+                            // Gib diese Release als JSON zurÃ¼ck
                             return release.GetRawText();
                         }
                     }
                 }
 
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Keine gültige Release im Array gefunden");
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Fehler beim Abrufen aller Releases: {ex.Message}");
             }
 
             return string.Empty;
@@ -182,14 +168,11 @@ namespace bacneTPana.Core
             if (root.TryGetProperty("tag_name", out var tagElement))
             {
                 var tagName = tagElement.GetString();
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Tag-Name aus GitHub: {tagName}");
-                // Entferne sowohl kleine als auch große 'v' am Anfang
+                // Entferne sowohl kleine als auch groÃŸe 'v' am Anfang
                 versionInfo.LatestVersion = tagName?.TrimStart('v', 'V') ?? CurrentVersion;
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Bereinigter Version: {versionInfo.LatestVersion}");
 
-                // Prüfe ob Update verfügbar ist
+                // PrÃ¼fe ob Update verfÃ¼gbar ist
                 var comparison = CompareVersions(versionInfo.LatestVersion, CurrentVersion);
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Versionsvergleich: {versionInfo.LatestVersion} vs {CurrentVersion} = {comparison}");
 
                 if (comparison > 0)
                 {
@@ -198,7 +181,6 @@ namespace bacneTPana.Core
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Kein 'tag_name' Feld gefunden");
             }
 
             // Extrahiere Download-URL
@@ -211,12 +193,10 @@ namespace bacneTPana.Core
                     if (asset.TryGetProperty("browser_download_url", out var urlElement))
                     {
                         var url = urlElement.GetString();
-                        System.Diagnostics.Debug.WriteLine($"[UpdateService] Asset {assetCount}: {url}");
                         // Suche nach .exe oder .zip Datei
                         if (url?.Contains(".exe") == true || url?.Contains(".zip") == true)
                         {
                             versionInfo.DownloadUrl = url;
-                            System.Diagnostics.Debug.WriteLine($"[UpdateService] Download-URL gesetzt: {url}");
                             break;
                         }
                     }
@@ -238,7 +218,6 @@ namespace bacneTPana.Core
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"[UpdateService] Update-Check erfolgreich. Neueste Version: {versionInfo.LatestVersion}, Update verfügbar: {versionInfo.UpdateAvailable}");
         }
 
         /// <summary>
@@ -254,25 +233,22 @@ namespace bacneTPana.Core
                 var response = await httpClient.GetAsync(downloadUrl);
                 if (!response.IsSuccessStatusCode)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[UpdateService] Download Fehler: {response.StatusCode}");
                     return false;
                 }
 
                 var content = await response.Content.ReadAsByteArrayAsync();
                 await File.WriteAllBytesAsync(savePath, content);
 
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Download erfolgreich: {savePath}");
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Download-Fehler: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Öffnet die GitHub Release-Seite im Browser
+        /// Ã–ffnet die GitHub Release-Seite im Browser
         /// </summary>
         public void OpenGitHubReleasePage()
         {
@@ -284,9 +260,8 @@ namespace bacneTPana.Core
                     UseShellExecute = true
                 });
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Fehler beim Öffnen der Release-Seite: {ex.Message}");
             }
         }
 
@@ -301,24 +276,20 @@ namespace bacneTPana.Core
                 var version1 = new Version(v1);
                 var version2 = new Version(v2);
                 var result = version1.CompareTo(version2);
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Version-Parse erfolgreich: {v1} -> {version1}");
                 return result;
             }
-            catch (FormatException ex)
+            catch (FormatException)
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] FEHLER beim Version-Parse: {v1} (Fehler: {ex.Message})");
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] Verwende default Vergleich (0 = gleich)");
                 return 0;
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"[UpdateService] UNERWARTETER Fehler beim Versionsvergleich: {ex.Message}");
                 return 0;
             }
         }
 
         /// <summary>
-        /// Gibt Informationen über die Anwendung zurück
+        /// Gibt Informationen Ã¼ber die Anwendung zurÃ¼ck
         /// </summary>
         public VersionInfo GetApplicationInfo()
         {

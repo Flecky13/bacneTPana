@@ -110,3 +110,4 @@ namespace bacneTPana.Core.ViewModels
         public int PacketCount { get; set; }
     }
 }
+

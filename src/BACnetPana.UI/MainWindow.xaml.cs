@@ -568,3 +568,4 @@ namespace bacneTPana.UI
         public System.Collections.ObjectModel.ObservableCollection<ProtocolTreeNode>? Children { get; set; }
     }
 }
+

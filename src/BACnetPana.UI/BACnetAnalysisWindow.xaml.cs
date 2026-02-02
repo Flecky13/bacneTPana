@@ -1,4 +1,4 @@
-using bacneTPana.Models;
+﻿using bacneTPana.Models;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -82,9 +82,9 @@ namespace bacneTPana.UI
             else
             {
                 if (SummaryStartDateTimeLabel != null)
-                    SummaryStartDateTimeLabel.Text = "—";
+                    SummaryStartDateTimeLabel.Text = "â€”";
                 if (SummaryEndDateTimeLabel != null)
-                    SummaryEndDateTimeLabel.Text = "—";
+                    SummaryEndDateTimeLabel.Text = "â€”";
             }
 
             PacketCountLabel.Text = packetCount.ToString();
@@ -100,7 +100,7 @@ namespace bacneTPana.UI
                 EndTimeSlider.Value = _totalDuration;
 
                 // UpdateChart() wird automatisch durch ValueChanged-Events der Slider aufgerufen
-                // Direkter Aufruf hier entfernt, um doppelte Ausführung zu vermeiden
+                // Direkter Aufruf hier entfernt, um doppelte AusfÃ¼hrung zu vermeiden
             }
         }
 
@@ -255,7 +255,7 @@ namespace bacneTPana.UI
             index = Math.Max(0, Math.Min(_topDevicesForHover.Count - 1, index));
 
             var item = _topDevicesForHover[index];
-            var infoText = $"Gerät: {item.Device}\n" +
+            var infoText = $"GerÃ¤t: {item.Device}\n" +
                            $"Gesamt: {item.Count} Anfragen\n" +
                            $"Durchschnitt: {item.AveragePerMinute:F2}/Min\n" +
                            $"Rel. Verteilung: {item.Percentage:F1}%";
@@ -270,7 +270,7 @@ namespace bacneTPana.UI
         {
             if (TopDevicesInfoLabel != null)
             {
-                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Gerät.";
+                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum GerÃ¤t.";
             }
         }
 
@@ -448,7 +448,7 @@ namespace bacneTPana.UI
             if (BACnetTopDevicesBorder != null)
                 BACnetTopDevicesBorder.Visibility = Visibility.Visible;
 
-            // Berechne Zeitspanne für Durchschnittsberechnung
+            // Berechne Zeitspanne fÃ¼r Durchschnittsberechnung
             var timeSpanMinutes = _totalDuration / 60.0; // _totalDuration ist in Sekunden
             if (StartTimeSlider != null && EndTimeSlider != null)
             {
@@ -498,7 +498,7 @@ namespace bacneTPana.UI
             var totalDevices = formattedDevices.Count;
             if (TopDevicesCountLabel != null)
             {
-                TopDevicesCountLabel.Text = $"Geräte: {totalDevices}";
+                TopDevicesCountLabel.Text = $"GerÃ¤te: {totalDevices}";
             }
 
             var topDevices = formattedDevices
@@ -519,7 +519,7 @@ namespace bacneTPana.UI
 
             var topDevicesModel = new PlotModel
             {
-                Title = "BACnet-Geräte (Top 10 Anfragen)",
+                Title = "BACnet-GerÃ¤te (Top 10 Anfragen)",
                 Background = OxyColors.White
             };
 
@@ -581,7 +581,7 @@ namespace bacneTPana.UI
                 var device = topDevices[i];
                 var customLabel = $"{device.Count} ({device.Percentage:F1}%)";
 
-                // Verwende Annotation für benutzerdefinierte Labels
+                // Verwende Annotation fÃ¼r benutzerdefinierte Labels
                 var annotation = new OxyPlot.Annotations.TextAnnotation
                 {
                     Text = customLabel,
@@ -608,23 +608,14 @@ namespace bacneTPana.UI
             // Initialer Hinweistext (kompakt)
             if (TopDevicesInfoLabel != null)
             {
-                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Gerät.";
+                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum GerÃ¤t.";
             }
         }
 
         private void UpdateBACnetReadPropertiesAnalysis(List<NetworkPacket> filteredPackets)
         {
-            // DEBUG: Schreibe in Output UND Konsole
-            var msg = $"========================================\nUpdateBACnetReadPropertiesAnalysis aufgerufen\n  Gesamt Pakete: {filteredPackets?.Count ?? 0}";
-            //System.Diagnostics.Debug.WriteLine(msg);
-            //Console.WriteLine(msg);
-            //System.Diagnostics.Trace.WriteLine(msg);
-
             if (filteredPackets == null || filteredPackets.Count == 0)
             {
-                //var abortMsg = "  ABBRUCH: Keine Pakete vorhanden!";
-                //System.Diagnostics.Debug.WriteLine(abortMsg);
-                //Console.WriteLine(abortMsg);
                 if (BACnetTopReadPropertyBorder != null)
                     BACnetTopReadPropertyBorder.Visibility = Visibility.Collapsed;
                 return;
@@ -635,22 +626,15 @@ namespace bacneTPana.UI
                 (p.DestinationPort >= 47808 && p.DestinationPort <= 47823) ||
                 (p.SourcePort >= 47808 && p.SourcePort <= 47823)).ToList();
 
-            var bacnetMsg = $"  BACnet Pakete: {bacnetPackets.Count}";
-            //System.Diagnostics.Debug.WriteLine(bacnetMsg);
-            //Console.WriteLine(bacnetMsg);
-
             if (bacnetPackets.Count == 0)
             {
-                //var noBacketMsg = "  ABBRUCH: Keine BACnet-Pakete gefunden!";
-                //System.Diagnostics.Debug.WriteLine(noBacketMsg);
-                //Console.WriteLine(noBacketMsg);
                 if (BACnetTopReadPropertyBorder != null)
                     BACnetTopReadPropertyBorder.Visibility = Visibility.Collapsed;
                 return;
             }
 
             var readPropertyGroups = new Dictionary<string, int>();
-            int totalReadPropertyCount = 0;  // Für Gruppierung (ohne Device-Objekte)
+            int totalReadPropertyCount = 0;  // FÃ¼r Gruppierung (ohne Device-Objekte)
             int totalReadPropertyRequests = 0;  // Gesamtzahl aller RP/RPM Confirmed-Requests (inkl. Device)
             int debugCheckedPackets = 0;
             int debugConfirmedReqCount = 0;
@@ -660,41 +644,8 @@ namespace bacneTPana.UI
             int debugServiceCode12 = 0;
             int debugServiceCode14 = 0;
 
-            int debugRpmMultiObjectPackets = 0;  // Zähler für RPM-Pakete mit mehreren Objekten
-            int debugRpmMultiObjectCount = 0;     // Gesamtzahl der zusätzlichen Objekte in RPMs
-
-// Sample: Zeige die ersten 10 Pakete mit Details
-            //System.Diagnostics.Debug.WriteLine($"  --- Beispiel-Pakete (erste 10, besonders auf ServiceChoice achten) ---");
-            //int sampleCount = 0;
-            //foreach (var samplePacket in bacnetPackets)
-            //{
-            //    if (sampleCount < 10 && samplePacket.Details != null && samplePacket.Details.Count > 0)
-            //    {
-            //        System.Diagnostics.Debug.WriteLine($"  Paket #{samplePacket.PacketNumber}:");
-            //        if (samplePacket.Details.ContainsKey("BACnet Type"))
-            //            System.Diagnostics.Debug.WriteLine($"    BACnet Type: '{samplePacket.Details["BACnet Type"]}'");
-            //        else
-            //            System.Diagnostics.Debug.WriteLine($"    BACnet Type: NICHT VORHANDEN");
-
-            //        if (samplePacket.Details.ContainsKey("BACnet Confirmed Service Code"))
-            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service Code: '{samplePacket.Details["BACnet Confirmed Service Code"]}'");
-            //        else
-            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service Code: NICHT VORHANDEN");
-
-            //        if (samplePacket.Details.ContainsKey("BACnet Confirmed Service"))
-            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service: '{samplePacket.Details["BACnet Confirmed Service"]}'");
-            //        else
-            //            System.Diagnostics.Debug.WriteLine($"    Confirmed Service: NICHT VORHANDEN");
-
-            //        if (samplePacket.Details.ContainsKey("Object Type"))
-            //            System.Diagnostics.Debug.WriteLine($"    Object Type: '{samplePacket.Details["Object Type"]}'");
-            //        if (samplePacket.Details.ContainsKey("Instance Number"))
-            //            System.Diagnostics.Debug.WriteLine($"    Instance: '{samplePacket.Details["Instance Number"]}'");
-            //        if (samplePacket.Details.ContainsKey("Property"))
-            //            System.Diagnostics.Debug.WriteLine($"    Property: '{samplePacket.Details["Property"]}'");
-            //        sampleCount++;
-            //    }
-            //}
+            int debugRpmMultiObjectPackets = 0;  // ZÃ¤hler fÃ¼r RPM-Pakete mit mehreren Objekten
+            int debugRpmMultiObjectCount = 0;     // Gesamtzahl der zusÃ¤tzlichen Objekte in RPMs
 
             foreach (var packet in bacnetPackets)
             {
@@ -703,7 +654,7 @@ namespace bacneTPana.UI
 
                 debugCheckedPackets++;
 
-                // Schritt 1: Prüfe ob es ein Confirmed-Request (PDU Type 0) ist
+                // Schritt 1: PrÃ¼fe ob es ein Confirmed-Request (PDU Type 0) ist
                 var isConfirmedReq = false;
                 if (packet.Details.TryGetValue("BACnet Type", out var typeValue) && !string.IsNullOrWhiteSpace(typeValue))
                 {
@@ -731,7 +682,7 @@ namespace bacneTPana.UI
 
                 debugConfirmedReqCount++;
 
-                // Schritt 2: Prüfe ServiceChoice - ReadProperty (12) oder ReadPropertyMultiple (14)
+                // Schritt 2: PrÃ¼fe ServiceChoice - ReadProperty (12) oder ReadPropertyMultiple (14)
                 var confirmedCode = GetServiceCode(packet.Details, "BACnet Confirmed Service Code", "BACnet Confirmed Service");
                 int? serviceCode = confirmedCode;
 
@@ -756,15 +707,13 @@ namespace bacneTPana.UI
 
                 debugReadPropServiceCount++;
 
-                // ★ SCHRITT: Behandle ReadPropertyMultiple (ServiceChoice 14) mit mehreren Objekten
-                // Diese MÜSSEN vor den normalen Object Type Filtern behandelt werden!
-                // WICHTIG: Prüfe auf "Object Types (All)" statt BACnetObjectCount, da dieser zurückgesetzt wird!
+                // â˜… SCHRITT: Behandle ReadPropertyMultiple (ServiceChoice 14) mit mehreren Objekten
+                // Diese MÃœSSEN vor den normalen Object Type Filtern behandelt werden!
+                // WICHTIG: PrÃ¼fe auf "Object Types (All)" statt BACnetObjectCount, da dieser zurÃ¼ckgesetzt wird!
                 if (serviceCode == 14 &&
                     packet.Details.TryGetValue("Object Types (All)", out var objTypesAll) &&
                     packet.Details.TryGetValue("Instance Numbers (All)", out var instancesAll))
                 {
-                    //if (isSpecialCase)
-                    //    System.Diagnostics.Debug.WriteLine($"[SPECIAL-TRACE] Paket #{packet.PacketNumber}: RPM Multi-Objekt Path gefunden (hat (All)-Felder)");
 
                     debugServiceCode14++;
                     debugRpmMultiObjectPackets++;
@@ -790,56 +739,52 @@ namespace bacneTPana.UI
                         string sourceIpMulti = string.IsNullOrWhiteSpace(packet.SourceIp) ? "Unbekannt" : packet.SourceIp;
                         string destIpMulti = string.IsNullOrWhiteSpace(packet.DestinationIp) ? "Unbekannt" : packet.DestinationIp;
 
-                        //System.Diagnostics.Debug.WriteLine($"[Multi-RPM] Paket #{packet.PacketNumber}: {maxCount} Objekte");
-
                         for (int i = 0; i < Math.Min(types.Count, instances.Count); i++)
                         {
                             var objType = types[i];
                             var instNum = instances[i];
 
-                            // Zähle ALLE Objekte für Gesamtstatistik
+                            // ZÃ¤hle ALLE Objekte fÃ¼r Gesamtstatistik
                             totalReadPropertyRequests++;
 
-                            // Überspringe Device-Objekte (Type 8) nur für die Gruppierung
+                            // Ãœberspringe Device-Objekte (Type 8) nur fÃ¼r die Gruppierung
                             if (objType == "8")
                                 continue;
 
                             totalReadPropertyCount++;
-                            var multiKey = $"{sourceIpMulti} → {destIpMulti} | {objType},{instNum}";
+                            var multiKey = $"{sourceIpMulti} â†’ {destIpMulti} | {objType},{instNum}";
                             if (!readPropertyGroups.ContainsKey(multiKey))
                                 readPropertyGroups[multiKey] = 0;
                             readPropertyGroups[multiKey]++;
                         }
 
-                        //if (isSpecialCase)
-                        //    System.Diagnostics.Debug.WriteLine($"[SPECIAL-TRACE] Paket #{packet.PacketNumber}: RPM-Multi continue - überspringe restlichen Code");
-                        continue; // Nächstes Paket!
+                        continue; // NÃ¤chstes Paket!
                     }
                 }
 
-                // Zähle ServiceChoice 12 vs 14
+                // ZÃ¤hle ServiceChoice 12 vs 14
                 if (serviceCode == 12)
                     debugServiceCode12++;
                 else if (serviceCode == 14)
                     debugServiceCode14++;
 
-                // Zähle dieses Paket für Gesamtstatistik (wird nur einmal pro Paket gezählt)
+                // ZÃ¤hle dieses Paket fÃ¼r Gesamtstatistik (wird nur einmal pro Paket gezÃ¤hlt)
                 totalReadPropertyRequests++;
 
                 // Schritt 3: Lese Object Type und Instance Number aus
                 packet.Details.TryGetValue("Object Type", out var objectType);
                 packet.Details.TryGetValue("Instance Number", out var instanceNumber);
 
-                // Zähle wenn Object Type fehlt
+                // ZÃ¤hle wenn Object Type fehlt
                 if (string.IsNullOrWhiteSpace(objectType))
                 {
                     debugNoObjectTypeFound++;
                 }
 
-                // Schritt 4: Schließe Object Type 8 (device) aus
+                // Schritt 4: SchlieÃŸe Object Type 8 (device) aus
                 if (!string.IsNullOrWhiteSpace(objectType))
                 {
-                    // Prüfe ob es Type 8 ist (numerisch oder als Text "device")
+                    // PrÃ¼fe ob es Type 8 ist (numerisch oder als Text "device")
                     var objTypeLower = objectType.ToLowerInvariant();
                     if (objectType == "8" || objTypeLower.Contains("device"))
                     {
@@ -857,9 +802,9 @@ namespace bacneTPana.UI
                 instanceNumber = string.IsNullOrWhiteSpace(instanceNumber) ? "?" : instanceNumber;
 
                 // Schritt 5: Gruppiere nach Quelle-IP + Ziel-IP + Object Type + Instance
-                // WICHTIG: Service Code (12 vs 14) wird NICHT berücksichtigt,
-                // d.h. ReadProperty und ReadPropertyMultiple zur gleichen Instanz werden zusammengezählt
-                var key = $"{sourceIp} → {destIp} | {objectType},{instanceNumber}";
+                // WICHTIG: Service Code (12 vs 14) wird NICHT berÃ¼cksichtigt,
+                // d.h. ReadProperty und ReadPropertyMultiple zur gleichen Instanz werden zusammengezÃ¤hlt
+                var key = $"{sourceIp} â†’ {destIp} | {objectType},{instanceNumber}";
 
                 if (!readPropertyGroups.ContainsKey(key))
                     readPropertyGroups[key] = 0;
@@ -871,46 +816,6 @@ namespace bacneTPana.UI
                 .OrderByDescending(x => x.Count)
                 .Take(10)
                 .ToList();
-
-            //// Debug-Info: Zeige Filterung-Statistik
-            System.Diagnostics.Debug.WriteLine($"");
-            System.Diagnostics.Debug.WriteLine($"╔════════════════════════════════════════════════════════════════════════════╗");
-            System.Diagnostics.Debug.WriteLine($"║         ReadProperty/ReadPropertyMultiple ANALYSE - STATISTIK             ║");
-            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
-            System.Diagnostics.Debug.WriteLine($"║ 1. PAKET-FILTERUNG                                                         ║");
-            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
-            System.Diagnostics.Debug.WriteLine($"║   Gesamt BACnet-Pakete:              {bacnetPackets.Count,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   Geprüfte Pakete:                   {debugCheckedPackets,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   → Confirmed-Request (Type 0):      {debugConfirmedReqCount,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   → Mit ServiceChoice 12/14:         {debugReadPropServiceCount,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
-            System.Diagnostics.Debug.WriteLine($"║ 2. SERVICE-VERTEILUNG                                                      ║");
-            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
-            System.Diagnostics.Debug.WriteLine($"║   ReadProperty (SC 12):              {debugServiceCode12,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   ReadPropertyMultiple (SC 14):      {debugServiceCode14,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
-            System.Diagnostics.Debug.WriteLine($"║ 3. MULTI-OBJEKT RPM EXTRAKTION                                             ║");
-            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
-            System.Diagnostics.Debug.WriteLine($"║   RPM-Pakete mit >1 Objekt:          {debugRpmMultiObjectPackets,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   Zusätzliche Objekte extrahiert:    {debugRpmMultiObjectCount,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"╠════════════════════════════════════════════════════════════════════════════╣");
-            System.Diagnostics.Debug.WriteLine($"║ 4. AUSSCHLÜSSE & FINALE ZÄHLUNG                                            ║");
-            System.Diagnostics.Debug.WriteLine($"╟────────────────────────────────────────────────────────────────────────────╢");
-            System.Diagnostics.Debug.WriteLine($"║   Pakete ohne Object Type:           {debugNoObjectTypeFound,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   Object Type 8 (Device) excluded:   {debugObjectType8Excluded,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   Finale Pakete gezählt:             {totalReadPropertyCount,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   GESAMT RP/RPM Requests (SC12+14):  {debugServiceCode12 + debugServiceCode14,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"║   Unique IP/Instanz Kombinationen:   {readPropertyGroups.Count,8}                           ║");
-            System.Diagnostics.Debug.WriteLine($"╚════════════════════════════════════════════════════════════════════════════╝");
-            System.Diagnostics.Debug.WriteLine($"");
-
-            //// Debug: Zeige die TOP 10 Pakete
-            //System.Diagnostics.Debug.WriteLine("=== TOP 10 ReadProperty Anfragen ===");
-            //for (int i = 0; i < topReadProps.Count; i++)
-            //{
-            //    System.Diagnostics.Debug.WriteLine($"  {i + 1}. {topReadProps[i].Label} - {topReadProps[i].Count}x");
-            //}
-            //System.Diagnostics.Debug.WriteLine("====================================");
 
             if (topReadProps.Count == 0)
             {
@@ -931,7 +836,7 @@ namespace bacneTPana.UI
             }
             var durationMinutes = durationSeconds / 60.0;
 
-            // Verwende die Summe der bereits gezählten Service Codes 12 + 14
+            // Verwende die Summe der bereits gezÃ¤hlten Service Codes 12 + 14
             int totalRpRpmRequests = debugServiceCode12 + debugServiceCode14;
             var perMinute = durationMinutes > 0 ? totalRpRpmRequests / durationMinutes : 0;
 
@@ -1029,7 +934,7 @@ namespace bacneTPana.UI
             // Initialer Hinweistext (kompakt)
             if (TopReadPropertyInfoLabel != null)
             {
-                TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Eintrag.";
+                TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum Eintrag.";
             }
         }
 
@@ -1080,7 +985,7 @@ namespace bacneTPana.UI
             catch
             {
                 if (TopReadPropertyInfoLabel != null)
-                    TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus über die Balken, um Details anzuzeigen...";
+                    TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber die Balken, um Details anzuzeigen...";
             }
         }
 
@@ -1088,7 +993,7 @@ namespace bacneTPana.UI
         {
             if (TopReadPropertyInfoLabel != null)
             {
-                TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Eintrag.";
+                TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum Eintrag.";
             }
         }
 
@@ -1196,7 +1101,7 @@ namespace bacneTPana.UI
             var intervalSeconds = 1.0;
             var intervals = (int)Math.Ceiling(duration / intervalSeconds);
 
-            // Zähle Pakete pro Intervall
+            // ZÃ¤hle Pakete pro Intervall
             var countsPerInterval = new int[intervals];
             foreach (var packet in packets)
             {
@@ -1206,14 +1111,14 @@ namespace bacneTPana.UI
                     countsPerInterval[index]++;
             }
 
-            // Erstelle DataPoints für das Chart
+            // Erstelle DataPoints fÃ¼r das Chart
             for (int i = 0; i < intervals; i++)
             {
                 var timeOffset = i * intervalSeconds;
                 points.Add(new DataPoint(timeOffset, countsPerInterval[i]));
             }
 
-            // Füge Endpunkt hinzu
+            // FÃ¼ge Endpunkt hinzu
             if (intervals > 0)
             {
                 points.Add(new DataPoint(duration, countsPerInterval[intervals - 1]));
@@ -1280,3 +1185,5 @@ namespace bacneTPana.UI
 
     }
 }
+
+

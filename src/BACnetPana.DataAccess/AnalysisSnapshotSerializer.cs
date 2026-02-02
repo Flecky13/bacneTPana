@@ -219,10 +219,9 @@ namespace bacneTPana.DataAccess
 
                         snapshot.Statistics = stats;
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         // Log aber nicht abbrechen bei Statistik-Fehler
-                        System.Diagnostics.Debug.WriteLine($"Warnung: Statistiken konnten nicht geladen werden: {ex.Message}");
                         // Erstelle leere Statistiken
                         snapshot.Statistics = new PacketStatistics();
                     }
@@ -235,9 +234,8 @@ namespace bacneTPana.DataAccess
                     {
                         snapshot.BacnetDb = JsonSerializer.Deserialize<AnalysisSnapshot.BACnetDatabaseSnapshot>(dbEl.GetRawText(), JsonOptions);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        System.Diagnostics.Debug.WriteLine($"Warnung: BACnet-DB konnte nicht geladen werden: {ex.Message}");
                     }
                 }
 
@@ -281,9 +279,8 @@ namespace bacneTPana.DataAccess
                                 ProgressChanged?.Invoke(this, (count, 0)); // 0 = unbekannte Gesamtzahl
                             }
                         }
-                        catch (Exception ex)
+                        catch
                         {
-                            System.Diagnostics.Debug.WriteLine($"Warnung: Paket {count} konnte nicht geladen werden: {ex.Message}");
                             count++; // Zähle trotzdem weiter
                         }
                     }

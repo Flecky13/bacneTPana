@@ -8,3 +8,4 @@ namespace bacneTPana.UI;
 public partial class App : Application
 {
 }
+

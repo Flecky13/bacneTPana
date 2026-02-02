@@ -247,3 +247,4 @@ namespace bacneTPana.DataAccess
         public int TotalPackets { get; set; }
     }
 }
+
