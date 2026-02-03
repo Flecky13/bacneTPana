@@ -132,6 +132,7 @@ namespace bacneTPana.UI
             UpdateBACnetAnalysis(filteredPackets);
             UpdateBACnetServicesAnalysis(filteredPackets);
             UpdateBACnetReadPropertiesAnalysis(filteredPackets);
+            UpdateBACnetCOVAnalysis(filteredPackets);
 
             if (StartTimeLabel != null)
                 StartTimeLabel.Text = $"{startOffset:F2} s";
@@ -997,6 +998,262 @@ namespace bacneTPana.UI
             }
         }
 
+        private void UpdateBACnetCOVAnalysis(List<NetworkPacket> filteredPackets)
+        {
+            // Filter: BACnet-Pakete
+            var bacnetPackets = filteredPackets.Where(p =>
+                (p.ApplicationProtocol?.ToUpper() == "BACNET") ||
+                (p.DestinationPort >= 47808 && p.DestinationPort <= 47823) ||
+                (p.SourcePort >= 47808 && p.SourcePort <= 47823)).ToList();
+
+            // Dictionary: "SourceIP|device,Instance-ObjectType,Instance" -> Count
+            var covGroups = new Dictionary<string, (string SourceIp, string DeviceInstance, string ObjectInfo, int Count)>();
+            int totalCovNotifications = 0;
+
+            foreach (var packet in bacnetPackets)
+            {
+                if (packet.Details == null || packet.Details.Count == 0)
+                    continue;
+
+                // Prüfe auf Unconfirmed COV Notification (Service Code 2)
+                var unconfirmedCode = GetServiceCode(packet.Details, "BACnet Unconfirmed Service Code", "BACnet Unconfirmed Service");
+                if (!unconfirmedCode.HasValue || unconfirmedCode.Value != 2)
+                    continue;
+
+                totalCovNotifications++;
+
+                // Extrahiere Source IP
+                var sourceIp = string.IsNullOrWhiteSpace(packet.SourceIp) ? "Unbekannt" : packet.SourceIp;
+
+                // Extrahiere Device Instance und Object Type/Instance
+                // Format: "Object Types (All): 8,0" und "Instance Numbers (All): 2100245,277"
+                // Bedeutung: [0] = Device, [1] = Monitored Object
+                // Also: 8 = Device Type, 0 = Object Type
+                //       2100245 = Device Instance, 277 = Object Instance
+                string deviceInstance = "unbekannt";
+                string objectType = "unbekannt";
+                string objectInstance = "?";
+
+                // Parse aus "Object Types (All)" und "Instance Numbers (All)"
+                if (packet.Details.TryGetValue("Object Types (All)", out var objectTypesAll) &&
+                    packet.Details.TryGetValue("Instance Numbers (All)", out var instanceNumbersAll))
+                {
+                    var objectTypes = objectTypesAll.Split(',').Select(x => x.Trim()).ToArray();
+                    var instanceNumbers = instanceNumbersAll.Split(',').Select(x => x.Trim()).ToArray();
+
+                    // [0] = Device, [1] = Monitored Object
+                    if (objectTypes.Length >= 2 && instanceNumbers.Length >= 2)
+                    {
+                        deviceInstance = instanceNumbers[0];
+                        objectType = objectTypes[1];
+                        objectInstance = instanceNumbers[1];
+                    }
+                }
+
+                // Erstelle eindeutigen Schlüssel: "SourceIP|device,Instance-ObjectType,Instance"
+                var objectInfo = $"{objectType},{objectInstance}";
+                var key = $"{sourceIp}|device,{deviceInstance}-{objectInfo}";
+
+                if (!covGroups.ContainsKey(key))
+                    covGroups[key] = (sourceIp, deviceInstance, objectInfo, 0);
+
+                var current = covGroups[key];
+                covGroups[key] = (current.SourceIp, current.DeviceInstance, current.ObjectInfo, current.Count + 1);
+            }
+
+            var topCovItems = covGroups
+                .Select(kv => new
+                {
+                    SourceIp = kv.Value.SourceIp,
+                    DeviceInstance = kv.Value.DeviceInstance,
+                    ObjectInfo = kv.Value.ObjectInfo,
+                    Label = $"{kv.Value.DeviceInstance} - {kv.Value.ObjectInfo}",
+                    Count = kv.Value.Count
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(10)
+                .ToList();
+
+            if (topCovItems.Count == 0)
+            {
+                if (BACnetTopCOVBorder != null)
+                    BACnetTopCOVBorder.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (BACnetTopCOVBorder != null)
+                BACnetTopCOVBorder.Visibility = Visibility.Visible;
+
+            double durationSeconds = 1;
+            if (filteredPackets.Count >= 2)
+            {
+                var minTs = filteredPackets.Min(p => p.Timestamp);
+                var maxTs = filteredPackets.Max(p => p.Timestamp);
+                durationSeconds = Math.Max(1e-6, (maxTs - minTs).TotalSeconds);
+            }
+            var durationMinutes = durationSeconds / 60.0;
+            var perMinute = durationMinutes > 0 ? totalCovNotifications / durationMinutes : 0;
+
+            if (TopCOVCountLabel != null)
+                TopCOVCountLabel.Text = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} Total - {1:F2}/min", totalCovNotifications, perMinute);
+
+            var topCovWithRate = topCovItems.Select(x => new
+            {
+                x.SourceIp,
+                x.DeviceInstance,
+                x.ObjectInfo,
+                x.Label,
+                x.Count,
+                Percentage = totalCovNotifications > 0 ? (x.Count * 100.0) / totalCovNotifications : 0.0,
+                PerMinute = durationMinutes > 0 ? x.Count / durationMinutes : 0.0,
+                DisplayValue = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} ({1:F1}%)", x.Count, totalCovNotifications > 0 ? (x.Count * 100.0) / totalCovNotifications : 0.0)
+            }).ToList();
+
+            var barHeight = 22;
+            var desiredHeight = Math.Max(10, topCovWithRate.Count) * barHeight;
+
+            var model = new PlotModel
+            {
+                Title = "Top 10 COV Notifications (Change of Value)",
+                Background = OxyColors.White
+            };
+
+            var categoryAxis = new CategoryAxis
+            {
+                Position = AxisPosition.Left,
+                ItemsSource = topCovWithRate,
+                LabelField = "Label",
+                GapWidth = 0.5
+            };
+            model.Axes.Add(categoryAxis);
+
+            var valueAxis = new LinearAxis
+            {
+                Position = AxisPosition.Bottom,
+                Title = "Anzahl Notifications",
+                MinimumPadding = 0,
+                AbsoluteMinimum = 0,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot,
+                MajorGridlineColor = OxyColor.FromRgb(220, 220, 220),
+                MinorGridlineColor = OxyColor.FromRgb(240, 240, 240)
+            };
+            model.Axes.Add(valueAxis);
+
+            if (COVTopChart != null)
+            {
+                COVTopChart.Height = desiredHeight;
+            }
+
+            var series = new BarSeries
+            {
+                FillColor = OxyColor.FromRgb(230, 126, 34),  // Orange für COV
+                StrokeColor = OxyColor.FromRgb(200, 100, 20),
+                StrokeThickness = 1,
+                BarWidth = 0.6,
+                LabelPlacement = LabelPlacement.Inside,
+                LabelMargin = 2,
+                TextColor = OxyColors.White
+            };
+
+            model.Annotations.Clear();
+            for (int i = 0; i < topCovWithRate.Count; i++)
+            {
+                var item = topCovWithRate[i];
+                var barItem = new BarItem
+                {
+                    Value = item.Count,
+                    CategoryIndex = i
+                };
+                series.Items.Add(barItem);
+
+                var annotation = new OxyPlot.Annotations.TextAnnotation
+                {
+                    Text = item.DisplayValue,
+                    TextPosition = new DataPoint(item.Count / 2.0, i),
+                    TextHorizontalAlignment = OxyPlot.HorizontalAlignment.Center,
+                    TextVerticalAlignment = OxyPlot.VerticalAlignment.Middle,
+                    TextColor = OxyColors.White,
+                    Stroke = OxyColors.Transparent,
+                    StrokeThickness = 0
+                };
+                model.Annotations.Add(annotation);
+            }
+
+            model.Series.Add(series);
+
+            if (COVTopChart != null)
+            {
+                COVTopChart.Model = model;
+                COVTopChart.Controller = _noWheelController;
+            }
+
+            if (TopCOVInfoLabel != null)
+            {
+                TopCOVInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Eintrag.";
+            }
+        }
+
+        private void COVTopChart_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (COVTopChart?.Model == null)
+                return;
+
+            var model = COVTopChart.Model;
+            var categoryAxis = model.Axes.FirstOrDefault(a => a is CategoryAxis) as CategoryAxis;
+            if (categoryAxis == null)
+                return;
+
+            var pos = e.GetPosition(COVTopChart);
+            var yData = categoryAxis.InverseTransform(pos.Y);
+            var series = model.Series.OfType<BarSeries>().FirstOrDefault();
+            if (series == null || series.Items.Count == 0)
+                return;
+
+            var index = (int)Math.Round(yData);
+            index = Math.Max(0, Math.Min(series.Items.Count - 1, index));
+
+            var itemsSource = (model.Axes.OfType<CategoryAxis>().FirstOrDefault()?.ItemsSource as System.Collections.IList);
+            if (itemsSource == null || index >= itemsSource.Count)
+                return;
+
+            var itemObj = itemsSource[index];
+            if (itemObj == null)
+                return;
+
+            dynamic item = itemObj;
+            try
+            {
+                string sourceIp = (string)item.SourceIp;
+                int count = (int)item.Count;
+                double percentage = (double)item.Percentage;
+                double perMinute = (double)item.PerMinute;
+                string label = (string)item.Label;
+
+                var info = $"Eintrag: {label}\n" +
+                           $"Source IP: {sourceIp}\n" +
+                           $"Gesamt: {count}\n" +
+                           $"Durchschnitt: {perMinute:F2}/Min\n" +
+                           $"Rel. Verteilung: {percentage:F1}%";
+
+                if (TopCOVInfoLabel != null)
+                    TopCOVInfoLabel.Text = info;
+            }
+            catch
+            {
+                if (TopCOVInfoLabel != null)
+                    TopCOVInfoLabel.Text = "Bewegen Sie die Maus über die Balken, um Details anzuzeigen...";
+            }
+        }
+
+        private void COVTopChart_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (TopCOVInfoLabel != null)
+            {
+                TopCOVInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Eintrag.";
+            }
+        }
+
         private void UpdateBACnetPacketsPerSecond(List<NetworkPacket> filteredPackets)
         {
             var bacnetPackets = filteredPackets.Where(p =>
@@ -1185,5 +1442,3 @@ namespace bacneTPana.UI
 
     }
 }
-
-
