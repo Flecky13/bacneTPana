@@ -34,6 +34,12 @@
                     </Button>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10">
+                    <Button x:Name="SettingsButton" Padding="15,10" Margin="5" MinHeight="50" MinWidth="100"
+                            Background="#FF9800" Foreground="White" FontSize="16"
+                            Click="SettingsButton_Click"
+                            ToolTip="COV Notifications Schwellwerte konfigurieren">
+                        <TextBlock Text="⚙️ Einstellungen" TextWrapping="NoWrap"/>
+                    </Button>
                     <Button x:Name="HelpButton" Padding="15,10" Margin="5" MinHeight="50" MinWidth="100"
                             Background="#6264A7" Foreground="White" FontSize="16"
                             Click="WiresharkInfoButton_Click"

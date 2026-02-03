@@ -1,3 +1,4 @@
+using bacneTPana.Core;
 using bacneTPana.Models;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -22,6 +23,8 @@ namespace bacneTPana.UI
         private DispatcherTimer? _debounceTimer;
         private BACnetDatabase _bacnetDb;
         private List<DeviceBarInfo>? _topDevicesForHover;
+        private readonly ConfigurationService _configService;
+        private COVThresholdConfig _covConfig;
 
         private class DeviceBarInfo
         {
@@ -39,6 +42,8 @@ namespace bacneTPana.UI
             _packets = packets ?? new List<NetworkPacket>();
             _activeFilter = activeFilter ?? string.Empty;
             _bacnetDb = bacnetDatabase ?? new BACnetDatabase();
+            _configService = new ConfigurationService();
+            _covConfig = _configService.LoadCOVThresholds();
 
             ConfigurePlotController();
             UpdateTitleWithFilter();
@@ -1000,6 +1005,9 @@ namespace bacneTPana.UI
 
         private void UpdateBACnetCOVAnalysis(List<NetworkPacket> filteredPackets)
         {
+            // Lade aktuelle Konfiguration
+            _covConfig = _configService.LoadCOVThresholds();
+
             // Filter: BACnet-Pakete
             var bacnetPackets = filteredPackets.Where(p =>
                 (p.ApplicationProtocol?.ToUpper() == "BACNET") ||
@@ -1026,10 +1034,6 @@ namespace bacneTPana.UI
                 var sourceIp = string.IsNullOrWhiteSpace(packet.SourceIp) ? "Unbekannt" : packet.SourceIp;
 
                 // Extrahiere Device Instance und Object Type/Instance
-                // Format: "Object Types (All): 8,0" und "Instance Numbers (All): 2100245,277"
-                // Bedeutung: [0] = Device, [1] = Monitored Object
-                // Also: 8 = Device Type, 0 = Object Type
-                //       2100245 = Device Instance, 277 = Object Instance
                 string deviceInstance = "unbekannt";
                 string objectType = "unbekannt";
                 string objectInstance = "?";
@@ -1106,8 +1110,12 @@ namespace bacneTPana.UI
                 x.Count,
                 Percentage = totalCovNotifications > 0 ? (x.Count * 100.0) / totalCovNotifications : 0.0,
                 PerMinute = durationMinutes > 0 ? x.Count / durationMinutes : 0.0,
-                DisplayValue = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} ({1:F1}%)", x.Count, totalCovNotifications > 0 ? (x.Count * 100.0) / totalCovNotifications : 0.0)
+                DisplayValue = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} ({1:F1}%)", x.Count, totalCovNotifications > 0 ? (x.Count * 100.0) / totalCovNotifications : 0.0),
+                Status = _covConfig.GetStatus(durationMinutes > 0 ? x.Count / durationMinutes : 0.0)
             }).ToList();
+
+            var maxCount = topCovWithRate.Max(x => x.Count);
+            var dotX = -Math.Max(1, maxCount * 0.06);
 
             var barHeight = 22;
             var desiredHeight = Math.Max(10, topCovWithRate.Count) * barHeight;
@@ -1123,7 +1131,8 @@ namespace bacneTPana.UI
                 Position = AxisPosition.Left,
                 ItemsSource = topCovWithRate,
                 LabelField = "Label",
-                GapWidth = 0.5
+                GapWidth = 0.5,
+                FontSize = 14
             };
             model.Axes.Add(categoryAxis);
 
@@ -1160,13 +1169,23 @@ namespace bacneTPana.UI
             for (int i = 0; i < topCovWithRate.Count; i++)
             {
                 var item = topCovWithRate[i];
+
+                // Bestimme die Ampel-Farbe basierend auf PerMinute
+                var statusColor = COVThresholdConfig.GetStatusColor(item.Status);
+
+                // Konvertiere HEX-Farbe zu OxyColor
+                var oxyColor = OxyColor.Parse(statusColor);
+
+                // Erstelle BarItem mit entsprechender Farbe
                 var barItem = new BarItem
                 {
                     Value = item.Count,
-                    CategoryIndex = i
+                    CategoryIndex = i,
+                    Color = oxyColor
                 };
                 series.Items.Add(barItem);
 
+                // Annotation mit Gesamtzahl / relativer Verteilung (wie vorher)
                 var annotation = new OxyPlot.Annotations.TextAnnotation
                 {
                     Text = item.DisplayValue,
@@ -1175,9 +1194,25 @@ namespace bacneTPana.UI
                     TextVerticalAlignment = OxyPlot.VerticalAlignment.Middle,
                     TextColor = OxyColors.White,
                     Stroke = OxyColors.Transparent,
-                    StrokeThickness = 0
+                    StrokeThickness = 0,
+                    FontSize = 12
                 };
                 model.Annotations.Add(annotation);
+
+                var dotAnnotation = new OxyPlot.Annotations.TextAnnotation
+                {
+                    Text = "⬤",
+                    TextPosition = new DataPoint(dotX, i),
+                    TextHorizontalAlignment = OxyPlot.HorizontalAlignment.Center,
+                    TextVerticalAlignment = OxyPlot.VerticalAlignment.Middle,
+                    TextColor = oxyColor,
+                    Stroke = OxyColors.Transparent,
+                    StrokeThickness = 0,
+                    FontSize = 16,
+                    ClipByXAxis = false,
+                    ClipByYAxis = false
+                };
+                model.Annotations.Add(dotAnnotation);
             }
 
             model.Series.Add(series);
@@ -1190,7 +1225,7 @@ namespace bacneTPana.UI
 
             if (TopCOVInfoLabel != null)
             {
-                TopCOVInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Eintrag.";
+                TopCOVInfoLabel.Text = "Ampel-Status: 🟢 Gut (0-" + _covConfig.GreenThreshold + "/min), 🟡 OK (" + (_covConfig.GreenThreshold + 1) + "-" + _covConfig.YellowThreshold + "/min), 🟠 Schlecht (" + (_covConfig.YellowThreshold + 1) + "-" + _covConfig.RedThreshold + "/min), 🔴 Kritisch (>" + _covConfig.RedThreshold + "/min)";
             }
         }
 

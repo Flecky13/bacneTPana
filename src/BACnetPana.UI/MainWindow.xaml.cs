@@ -555,6 +555,15 @@ namespace bacneTPana.UI
                 return $"{bytes / 1024.0:F2} KB";
             return $"{bytes} B";
         }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsWindow = new SettingsWindow
+            {
+                Owner = this
+            };
+            settingsWindow.ShowDialog();
+        }
     }
 
     /// <summary>
@@ -568,4 +577,3 @@ namespace bacneTPana.UI
         public System.Collections.ObjectModel.ObservableCollection<ProtocolTreeNode>? Children { get; set; }
     }
 }
-
