@@ -1,4 +1,4 @@
-﻿using bacneTPana.Models;
+using bacneTPana.Models;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -805,7 +805,7 @@ namespace bacneTPana.UI
                 // Schritt 5: Gruppiere nach Quelle-IP + Ziel-IP + Object Type + Instance
                 // WICHTIG: Service Code (12 vs 14) wird NICHT berÃ¼cksichtigt,
                 // d.h. ReadProperty und ReadPropertyMultiple zur gleichen Instanz werden zusammengezÃ¤hlt
-                var key = $"{sourceIp} â†’ {destIp} | {objectType},{instanceNumber}";
+                var key = $"{sourceIp} -> {destIp} | {objectType},{instanceNumber}";
 
                 if (!readPropertyGroups.ContainsKey(key))
                     readPropertyGroups[key] = 0;
