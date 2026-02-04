@@ -1,7 +1,7 @@
 namespace bacneTPana.Models
 {
     /// <summary>
-    /// Konfiguration für COV (Change of Value) Notification Schwellwerte
+    /// Konfiguration für COV (Change of Value) Notification und ReadProperty Schwellwerte
     /// </summary>
     public class COVThresholdConfig
     {
@@ -21,6 +21,21 @@ namespace bacneTPana.Models
         public int RedThreshold { get; set; } = 30;
 
         /// <summary>
+        /// Obere Grenze für grüne Ampel (Gut) - ReadProperty - Standard: 6
+        /// </summary>
+        public int ReadPropertyGreenThreshold { get; set; } = 6;
+
+        /// <summary>
+        /// Obere Grenze für gelbe Ampel (OK) - ReadProperty - Standard: 30
+        /// </summary>
+        public int ReadPropertyYellowThreshold { get; set; } = 30;
+
+        /// <summary>
+        /// Obere Grenze für orange Ampel (Kritisch) - ReadProperty - Standard: 60
+        /// </summary>
+        public int ReadPropertyRedThreshold { get; set; } = 60;
+
+        /// <summary>
         /// Bestimmt die Ampel-Bewertung basierend auf dem Durchschnittswert pro Minute
         /// </summary>
         /// <param name="averagePerMinute">Durchschnittliche COV Notifications pro Minute</param>
@@ -32,6 +47,23 @@ namespace bacneTPana.Models
             else if (averagePerMinute <= YellowThreshold)
                 return TrafficLightStatus.Yellow;
             else if (averagePerMinute <= RedThreshold)
+                return TrafficLightStatus.Red;
+            else
+                return TrafficLightStatus.Critical;
+        }
+
+        /// <summary>
+        /// Bestimmt die Ampel-Bewertung für ReadProperty basierend auf dem Durchschnittswert pro Minute
+        /// </summary>
+        /// <param name="averagePerMinute">Durchschnittliche ReadProperty Anfragen pro Minute</param>
+        /// <returns>Ampel-Status</returns>
+        public TrafficLightStatus GetReadPropertyStatus(double averagePerMinute)
+        {
+            if (averagePerMinute <= ReadPropertyGreenThreshold)
+                return TrafficLightStatus.Green;
+            else if (averagePerMinute <= ReadPropertyYellowThreshold)
+                return TrafficLightStatus.Yellow;
+            else if (averagePerMinute <= ReadPropertyRedThreshold)
                 return TrafficLightStatus.Red;
             else
                 return TrafficLightStatus.Critical;

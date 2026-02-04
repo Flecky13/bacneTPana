@@ -105,7 +105,7 @@ namespace bacneTPana.UI
                 EndTimeSlider.Value = _totalDuration;
 
                 // UpdateChart() wird automatisch durch ValueChanged-Events der Slider aufgerufen
-                // Direkter Aufruf hier entfernt, um doppelte AusfÃ¼hrung zu vermeiden
+                // Direkter Aufruf hier entfernt, um doppelte Ausführung zu vermeiden
             }
         }
 
@@ -261,7 +261,7 @@ namespace bacneTPana.UI
             index = Math.Max(0, Math.Min(_topDevicesForHover.Count - 1, index));
 
             var item = _topDevicesForHover[index];
-            var infoText = $"GerÃ¤t: {item.Device}\n" +
+            var infoText = $"Gerät: {item.Device}\n" +
                            $"Gesamt: {item.Count} Anfragen\n" +
                            $"Durchschnitt: {item.AveragePerMinute:F2}/Min\n" +
                            $"Rel. Verteilung: {item.Percentage:F1}%";
@@ -276,7 +276,7 @@ namespace bacneTPana.UI
         {
             if (TopDevicesInfoLabel != null)
             {
-                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum GerÃ¤t.";
+                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Gerät.";
             }
         }
 
@@ -504,7 +504,7 @@ namespace bacneTPana.UI
             var totalDevices = formattedDevices.Count;
             if (TopDevicesCountLabel != null)
             {
-                TopDevicesCountLabel.Text = $"GerÃ¤te: {totalDevices}";
+                TopDevicesCountLabel.Text = $"Geräte: {totalDevices}";
             }
 
             var topDevices = formattedDevices
@@ -525,7 +525,7 @@ namespace bacneTPana.UI
 
             var topDevicesModel = new PlotModel
             {
-                Title = "BACnet-GerÃ¤te (Top 10 Anfragen)",
+                Title = "BACnet-Geräte (Top 10 Anfragen)",
                 Background = OxyColors.White
             };
 
@@ -587,7 +587,7 @@ namespace bacneTPana.UI
                 var device = topDevices[i];
                 var customLabel = $"{device.Count} ({device.Percentage:F1}%)";
 
-                // Verwende Annotation fÃ¼r benutzerdefinierte Labels
+                // Verwende Annotation für benutzerdefinierte Labels
                 var annotation = new OxyPlot.Annotations.TextAnnotation
                 {
                     Text = customLabel,
@@ -614,7 +614,7 @@ namespace bacneTPana.UI
             // Initialer Hinweistext (kompakt)
             if (TopDevicesInfoLabel != null)
             {
-                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum GerÃ¤t.";
+                TopDevicesInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Gerät.";
             }
         }
 
@@ -640,7 +640,7 @@ namespace bacneTPana.UI
             }
 
             var readPropertyGroups = new Dictionary<string, int>();
-            int totalReadPropertyCount = 0;  // FÃ¼r Gruppierung (ohne Device-Objekte)
+            int totalReadPropertyCount = 0;  // Für Gruppierung (ohne Device-Objekte)
             int totalReadPropertyRequests = 0;  // Gesamtzahl aller RP/RPM Confirmed-Requests (inkl. Device)
             int debugCheckedPackets = 0;
             int debugConfirmedReqCount = 0;
@@ -650,8 +650,8 @@ namespace bacneTPana.UI
             int debugServiceCode12 = 0;
             int debugServiceCode14 = 0;
 
-            int debugRpmMultiObjectPackets = 0;  // ZÃ¤hler fÃ¼r RPM-Pakete mit mehreren Objekten
-            int debugRpmMultiObjectCount = 0;     // Gesamtzahl der zusÃ¤tzlichen Objekte in RPMs
+            int debugRpmMultiObjectPackets = 0;  // Zähler für RPM-Pakete mit mehreren Objekten
+            int debugRpmMultiObjectCount = 0;     // Gesamtzahl der zusätzlichen Objekte in RPMs
 
             foreach (var packet in bacnetPackets)
             {
@@ -660,7 +660,7 @@ namespace bacneTPana.UI
 
                 debugCheckedPackets++;
 
-                // Schritt 1: PrÃ¼fe ob es ein Confirmed-Request (PDU Type 0) ist
+                // Schritt 1: Prüfe ob es ein Confirmed-Request (PDU Type 0) ist
                 var isConfirmedReq = false;
                 if (packet.Details.TryGetValue("BACnet Type", out var typeValue) && !string.IsNullOrWhiteSpace(typeValue))
                 {
@@ -688,7 +688,7 @@ namespace bacneTPana.UI
 
                 debugConfirmedReqCount++;
 
-                // Schritt 2: PrÃ¼fe ServiceChoice - ReadProperty (12) oder ReadPropertyMultiple (14)
+                // Schritt 2: Prüfe ServiceChoice - ReadProperty (12) oder ReadPropertyMultiple (14)
                 var confirmedCode = GetServiceCode(packet.Details, "BACnet Confirmed Service Code", "BACnet Confirmed Service");
                 int? serviceCode = confirmedCode;
 
@@ -713,9 +713,9 @@ namespace bacneTPana.UI
 
                 debugReadPropServiceCount++;
 
-                // â˜… SCHRITT: Behandle ReadPropertyMultiple (ServiceChoice 14) mit mehreren Objekten
-                // Diese MÃœSSEN vor den normalen Object Type Filtern behandelt werden!
-                // WICHTIG: PrÃ¼fe auf "Object Types (All)" statt BACnetObjectCount, da dieser zurÃ¼ckgesetzt wird!
+                // ☆ SCHRITT: Behandle ReadPropertyMultiple (ServiceChoice 14) mit mehreren Objekten
+                // Diese MÜSSEN vor den normalen Object Type Filtern behandelt werden!
+                // WICHTIG: Prüfe auf "Object Types (All)" statt BACnetObjectCount, da dieser zurückgesetzt wird!
                 if (serviceCode == 14 &&
                     packet.Details.TryGetValue("Object Types (All)", out var objTypesAll) &&
                     packet.Details.TryGetValue("Instance Numbers (All)", out var instancesAll))
@@ -768,29 +768,29 @@ namespace bacneTPana.UI
                     }
                 }
 
-                // ZÃ¤hle ServiceChoice 12 vs 14
+                // Zähle ServiceChoice 12 vs 14
                 if (serviceCode == 12)
                     debugServiceCode12++;
                 else if (serviceCode == 14)
                     debugServiceCode14++;
 
-                // ZÃ¤hle dieses Paket fÃ¼r Gesamtstatistik (wird nur einmal pro Paket gezÃ¤hlt)
+                // Zähle dieses Paket für Gesamtstatistik (wird nur einmal pro Paket gezählt)
                 totalReadPropertyRequests++;
 
                 // Schritt 3: Lese Object Type und Instance Number aus
                 packet.Details.TryGetValue("Object Type", out var objectType);
                 packet.Details.TryGetValue("Instance Number", out var instanceNumber);
 
-                // ZÃ¤hle wenn Object Type fehlt
+                // Zähle wenn Object Type fehlt
                 if (string.IsNullOrWhiteSpace(objectType))
                 {
                     debugNoObjectTypeFound++;
                 }
 
-                // Schritt 4: SchlieÃŸe Object Type 8 (device) aus
+                // Schritt 4: Schließe Object Type 8 (device) aus
                 if (!string.IsNullOrWhiteSpace(objectType))
                 {
-                    // PrÃ¼fe ob es Type 8 ist (numerisch oder als Text "device")
+                    // Prüfe ob es Type 8 ist (numerisch oder als Text "device")
                     var objTypeLower = objectType.ToLowerInvariant();
                     if (objectType == "8" || objTypeLower.Contains("device"))
                     {
@@ -808,8 +808,8 @@ namespace bacneTPana.UI
                 instanceNumber = string.IsNullOrWhiteSpace(instanceNumber) ? "?" : instanceNumber;
 
                 // Schritt 5: Gruppiere nach Quelle-IP + Ziel-IP + Object Type + Instance
-                // WICHTIG: Service Code (12 vs 14) wird NICHT berÃ¼cksichtigt,
-                // d.h. ReadProperty und ReadPropertyMultiple zur gleichen Instanz werden zusammengezÃ¤hlt
+                // WICHTIG: Service Code (12 vs 14) wird NICHT berücksichtigt,
+                // d.h. ReadProperty und ReadPropertyMultiple zur gleichen Instanz werden zusammengezählt
                 var key = $"{sourceIp} -> {destIp} | {objectType},{instanceNumber}";
 
                 if (!readPropertyGroups.ContainsKey(key))
@@ -855,8 +855,12 @@ namespace bacneTPana.UI
                 x.Count,
                 Percentage = totalReadPropertyCount > 0 ? (x.Count * 100.0) / totalReadPropertyCount : 0.0,
                 PerMinute = durationMinutes > 0 ? x.Count / durationMinutes : 0.0,
-                DisplayValue = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} ({1:F1}%)", x.Count, totalReadPropertyCount > 0 ? (x.Count * 100.0) / totalReadPropertyCount : 0.0)
+                DisplayValue = string.Format(CultureInfo.GetCultureInfo("de-DE"), "{0} ({1:F1}%)", x.Count, totalReadPropertyCount > 0 ? (x.Count * 100.0) / totalReadPropertyCount : 0.0),
+                Status = _covConfig.GetReadPropertyStatus(durationMinutes > 0 ? x.Count / durationMinutes : 0.0)
             }).ToList();
+
+            var maxReadPropCount = topReadPropsWithRate.Max(x => x.Count);
+            var dotX = -Math.Max(1, maxReadPropCount * 0.06);
 
             var barHeight = 22;
             var desiredHeight = Math.Max(10, topReadPropsWithRate.Count) * barHeight;
@@ -909,13 +913,23 @@ namespace bacneTPana.UI
             for (int i = 0; i < topReadPropsWithRate.Count; i++)
             {
                 var item = topReadPropsWithRate[i];
+
+                // Bestimme die Ampel-Farbe basierend auf PerMinute
+                var statusColor = COVThresholdConfig.GetStatusColor(item.Status);
+
+                // Konvertiere HEX-Farbe zu OxyColor
+                var oxyColor = OxyColor.Parse(statusColor);
+
+                // Erstelle BarItem mit entsprechender Farbe
                 var barItem = new BarItem
                 {
                     Value = item.Count,
-                    CategoryIndex = i
+                    CategoryIndex = i,
+                    Color = oxyColor
                 };
                 series.Items.Add(barItem);
 
+                // Annotation mit Gesamtzahl / relativer Verteilung
                 var annotation = new OxyPlot.Annotations.TextAnnotation
                 {
                     Text = item.DisplayValue,
@@ -924,9 +938,26 @@ namespace bacneTPana.UI
                     TextVerticalAlignment = OxyPlot.VerticalAlignment.Middle,
                     TextColor = OxyColors.White,
                     Stroke = OxyColors.Transparent,
-                    StrokeThickness = 0
+                    StrokeThickness = 0,
+                    FontSize = 12
                 };
                 model.Annotations.Add(annotation);
+
+                // Ampel-Punkt links vom Balken
+                var dotAnnotation = new OxyPlot.Annotations.TextAnnotation
+                {
+                    Text = "⬤",
+                    TextPosition = new DataPoint(dotX, i),
+                    TextHorizontalAlignment = OxyPlot.HorizontalAlignment.Center,
+                    TextVerticalAlignment = OxyPlot.VerticalAlignment.Middle,
+                    TextColor = oxyColor,
+                    Stroke = OxyColors.Transparent,
+                    StrokeThickness = 0,
+                    FontSize = 16,
+                    ClipByXAxis = false,
+                    ClipByYAxis = false
+                };
+                model.Annotations.Add(dotAnnotation);
             }
 
             model.Series.Add(series);
@@ -937,10 +968,10 @@ namespace bacneTPana.UI
                 ReadPropertyTopChart.Controller = _noWheelController;
             }
 
-            // Initialer Hinweistext (kompakt)
+            // Initialer Hinweistext mit Ampel-Status-Erklärung
             if (TopReadPropertyInfoLabel != null)
             {
-                TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum Eintrag.";
+                TopReadPropertyInfoLabel.Text = "Ampel-Status: 🟢 Gut (0-" + _covConfig.ReadPropertyGreenThreshold + "/min), 🟡 OK (" + (_covConfig.ReadPropertyGreenThreshold + 1) + "-" + _covConfig.ReadPropertyYellowThreshold + "/min), 🟠 Schlecht (" + (_covConfig.ReadPropertyYellowThreshold + 1) + "-" + _covConfig.ReadPropertyRedThreshold + "/min), 🔴 Kritisch (>" + _covConfig.ReadPropertyRedThreshold + "/min)";
             }
         }
 
@@ -979,11 +1010,16 @@ namespace bacneTPana.UI
                 double percentage = (double)item.Percentage;
                 double perMinute = (double)item.PerMinute;
                 string label = (string)item.Label;
+                string status = (string)item.Status.ToString();
+
+                var statusEmoji = COVThresholdConfig.GetStatusEmoji((TrafficLightStatus)item.Status);
+                var statusText = COVThresholdConfig.GetStatusText((TrafficLightStatus)item.Status);
 
                 var info = $"Eintrag: {label}\n" +
                            $"Gesamt: {count}\n" +
                            $"Durchschnitt: {perMinute:F2}/Min\n" +
-                           $"Rel. Verteilung: {percentage:F1}%";
+                           $"Rel. Verteilung: {percentage:F1}%\n" +
+                           $"Status: {statusEmoji} {statusText}";
 
                 if (TopReadPropertyInfoLabel != null)
                     TopReadPropertyInfoLabel.Text = info;
@@ -991,7 +1027,7 @@ namespace bacneTPana.UI
             catch
             {
                 if (TopReadPropertyInfoLabel != null)
-                    TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber die Balken, um Details anzuzeigen...";
+                    TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus über die Balken, um Details anzuzeigen...";
             }
         }
 
@@ -999,7 +1035,7 @@ namespace bacneTPana.UI
         {
             if (TopReadPropertyInfoLabel != null)
             {
-                TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus Ã¼ber einen Balken fÃ¼r Details zum Eintrag.";
+                TopReadPropertyInfoLabel.Text = "Bewegen Sie die Maus über einen Balken für Details zum Eintrag.";
             }
         }
 
@@ -1393,7 +1429,7 @@ namespace bacneTPana.UI
             var intervalSeconds = 1.0;
             var intervals = (int)Math.Ceiling(duration / intervalSeconds);
 
-            // ZÃ¤hle Pakete pro Intervall
+            // Zähle Pakete pro Intervall
             var countsPerInterval = new int[intervals];
             foreach (var packet in packets)
             {
@@ -1403,14 +1439,14 @@ namespace bacneTPana.UI
                     countsPerInterval[index]++;
             }
 
-            // Erstelle DataPoints fÃ¼r das Chart
+            // Erstelle DataPoints für das Chart
             for (int i = 0; i < intervals; i++)
             {
                 var timeOffset = i * intervalSeconds;
                 points.Add(new DataPoint(timeOffset, countsPerInterval[i]));
             }
 
-            // FÃ¼ge Endpunkt hinzu
+            // Füge Endpunkt hinzu
             if (intervals > 0)
             {
                 points.Add(new DataPoint(duration, countsPerInterval[intervals - 1]));
