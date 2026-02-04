@@ -30,14 +30,39 @@ namespace bacneTPana.UI
             ReadPropertyRedThresholdSlider.Value = _config.ReadPropertyRedThreshold;
 
             UpdateValueLabels();
+            UpdateSliderConstraints();
 
             // Subscribe to slider changes
-            GreenThresholdSlider.ValueChanged += (s, e) => UpdateValueLabels();
-            YellowThresholdSlider.ValueChanged += (s, e) => UpdateValueLabels();
-            RedThresholdSlider.ValueChanged += (s, e) => UpdateValueLabels();
-            ReadPropertyGreenThresholdSlider.ValueChanged += (s, e) => UpdateValueLabels();
-            ReadPropertyYellowThresholdSlider.ValueChanged += (s, e) => UpdateValueLabels();
-            ReadPropertyRedThresholdSlider.ValueChanged += (s, e) => UpdateValueLabels();
+            GreenThresholdSlider.ValueChanged += (s, e) =>
+            {
+                UpdateValueLabels();
+                UpdateSliderConstraints();
+            };
+            YellowThresholdSlider.ValueChanged += (s, e) =>
+            {
+                UpdateValueLabels();
+                UpdateSliderConstraints();
+            };
+            RedThresholdSlider.ValueChanged += (s, e) =>
+            {
+                UpdateValueLabels();
+                UpdateSliderConstraints();
+            };
+            ReadPropertyGreenThresholdSlider.ValueChanged += (s, e) =>
+            {
+                UpdateValueLabels();
+                UpdateSliderConstraints();
+            };
+            ReadPropertyYellowThresholdSlider.ValueChanged += (s, e) =>
+            {
+                UpdateValueLabels();
+                UpdateSliderConstraints();
+            };
+            ReadPropertyRedThresholdSlider.ValueChanged += (s, e) =>
+            {
+                UpdateValueLabels();
+                UpdateSliderConstraints();
+            };
         }
 
         private void UpdateValueLabels()
@@ -50,65 +75,33 @@ namespace bacneTPana.UI
             ReadPropertyRedThresholdValueLabel.Text = ReadPropertyRedThresholdSlider.Value.ToString("F0");
         }
 
-        private bool ValidateSettings()
+        private void UpdateSliderConstraints()
         {
-            // Validate COV settings
-            int greenValue = (int)GreenThresholdSlider.Value;
-            int yellowValue = (int)YellowThresholdSlider.Value;
-            int redValue = (int)RedThresholdSlider.Value;
+            // COV Sliders
+            // Green Slider: Minimum bleibt 0, Maximum wird vom Yellow Slider bestimmt
+            GreenThresholdSlider.Maximum = YellowThresholdSlider.Value;
 
-            if (greenValue >= yellowValue)
-            {
-                MessageBox.Show(
-                    "Der Grüne Schwellwert (COV) muss kleiner als der Gelbe Schwellwert sein.",
-                    "Validierungsfehler",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
+            // Yellow Slider: Minimum wird vom Green Slider bestimmt, Maximum vom Red Slider
+            YellowThresholdSlider.Minimum = GreenThresholdSlider.Value;
+            YellowThresholdSlider.Maximum = RedThresholdSlider.Value;
 
-            if (yellowValue >= redValue)
-            {
-                MessageBox.Show(
-                    "Der Gelbe Schwellwert (COV) muss kleiner als der Rote Schwellwert sein.",
-                    "Validierungsfehler",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
+            // Red Slider: Minimum wird vom Yellow Slider bestimmt
+            RedThresholdSlider.Minimum = YellowThresholdSlider.Value;
 
-            // Validate ReadProperty settings
-            int rpGreenValue = (int)ReadPropertyGreenThresholdSlider.Value;
-            int rpYellowValue = (int)ReadPropertyYellowThresholdSlider.Value;
-            int rpRedValue = (int)ReadPropertyRedThresholdSlider.Value;
+            // ReadProperty Sliders
+            // Green Slider: Minimum bleibt 0, Maximum wird vom Yellow Slider bestimmt
+            ReadPropertyGreenThresholdSlider.Maximum = ReadPropertyYellowThresholdSlider.Value;
 
-            if (rpGreenValue >= rpYellowValue)
-            {
-                MessageBox.Show(
-                    "Der Grüne Schwellwert (ReadProperty) muss kleiner als der Gelbe Schwellwert sein.",
-                    "Validierungsfehler",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
+            // Yellow Slider: Minimum wird vom Green Slider bestimmt, Maximum vom Red Slider
+            ReadPropertyYellowThresholdSlider.Minimum = ReadPropertyGreenThresholdSlider.Value;
+            ReadPropertyYellowThresholdSlider.Maximum = ReadPropertyRedThresholdSlider.Value;
 
-            if (rpYellowValue >= rpRedValue)
-            {
-                MessageBox.Show(
-                    "Der Gelbe Schwellwert (ReadProperty) muss kleiner als der Rote Schwellwert sein.",
-                    "Validierungsfehler",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
-
-            return true;
+            // Red Slider: Minimum wird vom Yellow Slider bestimmt
+            ReadPropertyRedThresholdSlider.Minimum = ReadPropertyYellowThresholdSlider.Value;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!ValidateSettings())
-                return;
 
             // Save COV settings
             _config.GreenThreshold = (int)GreenThresholdSlider.Value;
@@ -151,8 +144,8 @@ namespace bacneTPana.UI
         {
             var result = MessageBox.Show(
                 "Möchten Sie die Einstellungen auf die Standardwerte zurücksetzen?\n\n" +
-                "COV - Grün: 2, Gelb: 10, Rot: 30\n" +
-                "ReadProperty - Grün: 6, Gelb: 30, Rot: 60",
+                "COV - Grün: 2, Gelb: 10, Orange: 30\n" +
+                "ReadProperty - Grün: 6, Gelb: 30, Orange: 60",
                 "Bestätigung",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
