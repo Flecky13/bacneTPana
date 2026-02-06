@@ -1,4 +1,4 @@
-using bacneTPana.Core;
+﻿using bacneTPana.Core;
 using bacneTPana.Models;
 using OxyPlot;
 using OxyPlot.Axes;
@@ -758,7 +758,7 @@ namespace bacneTPana.UI
                                 continue;
 
                             totalReadPropertyCount++;
-                            var multiKey = $"{sourceIpMulti} â†’ {destIpMulti} | {objType},{instNum}";
+                            var multiKey = $"{sourceIpMulti} -> {destIpMulti} | {objType},{instNum}";
                             if (!readPropertyGroups.ContainsKey(multiKey))
                                 readPropertyGroups[multiKey] = 0;
                             readPropertyGroups[multiKey]++;
@@ -915,7 +915,7 @@ namespace bacneTPana.UI
                 var item = topReadPropsWithRate[i];
 
                 // Bestimme die Ampel-Farbe basierend auf PerMinute
-                var statusColor = COVThresholdConfig.GetStatusColor(item.Status);
+                var statusColor = _covConfig.GetStatusColorFromConfig(item.Status);
 
                 // Konvertiere HEX-Farbe zu OxyColor
                 var oxyColor = OxyColor.Parse(statusColor);
@@ -1207,7 +1207,7 @@ namespace bacneTPana.UI
                 var item = topCovWithRate[i];
 
                 // Bestimme die Ampel-Farbe basierend auf PerMinute
-                var statusColor = COVThresholdConfig.GetStatusColor(item.Status);
+                var statusColor = _covConfig.GetStatusColorFromConfig(item.Status);
 
                 // Konvertiere HEX-Farbe zu OxyColor
                 var oxyColor = OxyColor.Parse(statusColor);

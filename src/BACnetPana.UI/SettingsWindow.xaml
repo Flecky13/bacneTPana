@@ -63,45 +63,70 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
             <!-- Info Box -->
             <Border Grid.Row="0" Background="#E8F5E9" BorderBrush="#4CAF50" BorderThickness="1" Padding="15" Margin="0,0,0,15" CornerRadius="4">
                 <StackPanel>
-                    <TextBlock Text="Ampel-Bewertung" FontWeight="Bold" Foreground="#2E7D32" Margin="0,0,0,8"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <TextBlock Text="Ampel-Bewertung" FontWeight="Bold" Foreground="#2E7D32" Margin="0,0,0,4"/>
+                    <TextBlock Text="Klicken Sie auf eine Bewertungszeile, um die Farbe zu ändern" FontSize="10" FontStyle="Italic" Foreground="#666" Margin="0,0,0,10"/>
 
-                        <TextBlock Grid.Column="0" Text="🟢 Gut:" Foreground="#2E7D32" FontWeight="Bold" Margin="0,0,8,0"/>
-                        <TextBlock Grid.Column="1" Text="0 - [Grüner Schwellwert] COV/min" Foreground="#555"/>
+                    <!-- Gut -->
+                    <Border x:Name="GreenColorBorder" Background="Transparent" Padding="5" Margin="0,0,0,5" Cursor="Hand" MouseLeftButtonDown="GreenColorBorder_Click">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" x:Name="GreenColorSwatch" Width="14" Height="14" Background="#28A745" CornerRadius="2" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" x:Name="GreenColorLabel" Text="🟢 Gut:" Foreground="#28A745" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="2" Text="0 - [Grüner Schwellwert] COV/min" Foreground="#555"/>
+                        </Grid>
+                    </Border>
 
-                        <TextBlock Grid.Column="2" Text="🟡 OK:" Foreground="#F57F17" FontWeight="Bold" Margin="12,0,8,0"/>
-                        <TextBlock Grid.Column="3" Text="> Grüner Schwellwert bis [Gelber Schwellwert] COV/min" Foreground="#555"/>
-                    </Grid>
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- OK -->
+                    <Border x:Name="YellowColorBorder" Background="Transparent" Padding="5" Margin="0,0,0,5" Cursor="Hand" MouseLeftButtonDown="YellowColorBorder_Click">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" x:Name="YellowColorSwatch" Width="14" Height="14" Background="LightBlue" CornerRadius="2" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" x:Name="YellowColorLabel" Text="🟡 OK:" Foreground="LightBlue" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="2" Text="> Grüner Schwellwert bis [Gelber Schwellwert] COV/min" Foreground="#555"/>
+                        </Grid>
+                    </Border>
 
-                        <TextBlock Grid.Column="0" Text="🟠 Schlecht:" Foreground="#FF9800" FontWeight="Bold" Margin="0,0,8,0"/>
-                        <TextBlock Grid.Column="1" Text="> Gelber Schwellwert bis [Roter Schwellwert] COV/min" Foreground="#555"/>
+                    <!-- Schlecht -->
+                    <Border x:Name="RedColorBorder" Background="Transparent" Padding="5" Margin="0,0,0,5" Cursor="Hand" MouseLeftButtonDown="RedColorBorder_Click">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" x:Name="RedColorSwatch" Width="14" Height="14" Background="#FF9800" CornerRadius="2" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" x:Name="RedColorLabel" Text="🟠 Schlecht:" Foreground="#FF9800" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="2" Text="> Gelber Schwellwert bis [Roter Schwellwert] COV/min" Foreground="#555"/>
+                        </Grid>
+                    </Border>
 
-                        <TextBlock Grid.Column="2" Text="🔴 Kritisch:" Foreground="#C62828" FontWeight="Bold" Margin="12,0,8,0"/>
-                        <TextBlock Grid.Column="3" Text="> Roter Schwellwert" Foreground="#555"/>
-                    </Grid>
+                    <!-- Kritisch -->
+                    <Border x:Name="CriticalColorBorder" Background="Transparent" Padding="5" Cursor="Hand" MouseLeftButtonDown="CriticalColorBorder_Click">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" x:Name="CriticalColorSwatch" Width="14" Height="14" Background="#C62828" CornerRadius="2" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" x:Name="CriticalColorLabel" Text="🔴 Kritisch:" Foreground="#C62828" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="2" Text="> Roter Schwellwert" Foreground="#555"/>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </Border>
 
@@ -160,7 +185,7 @@
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Column="0" Grid.Row="0">
-                            <TextBlock Text="🟡 Schwellwert OK" FontWeight="Bold" Foreground="#FFC107"/>
+                            <TextBlock Text="🟡 Schwellwert OK" FontWeight="Bold" Foreground="LightBlue"/>
                             <TextBlock Text="Maximal für OK-Status" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
                         </StackPanel>
 
@@ -176,7 +201,7 @@
                                    Text="10"
                                    FontWeight="Bold"
                                    FontSize="14"
-                                   Foreground="#FFC107"
+                                   Foreground="LightBlue"
                                    TextAlignment="Right"/>
 
                         <TextBlock Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
@@ -278,7 +303,7 @@
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Column="0" Grid.Row="0">
-                            <TextBlock Text="🟡 Schwellwert OK" FontWeight="Bold" Foreground="#FFC107"/>
+                            <TextBlock Text="🟡 Schwellwert OK" FontWeight="Bold" Foreground="LightBlue"/>
                             <TextBlock Text="Maximal für OK-Status" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
                         </StackPanel>
 
@@ -294,7 +319,7 @@
                                    Text="30"
                                    FontWeight="Bold"
                                    FontSize="14"
-                                   Foreground="#FFC107"
+                                   Foreground="LightBlue"
                                    TextAlignment="Right"/>
 
                         <TextBlock Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"

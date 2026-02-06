@@ -1,6 +1,8 @@
 using bacneTPana.Core;
 using bacneTPana.Models;
 using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace bacneTPana.UI
 {
@@ -28,6 +30,9 @@ namespace bacneTPana.UI
             ReadPropertyGreenThresholdSlider.Value = _config.ReadPropertyGreenThreshold;
             ReadPropertyYellowThresholdSlider.Value = _config.ReadPropertyYellowThreshold;
             ReadPropertyRedThresholdSlider.Value = _config.ReadPropertyRedThreshold;
+
+            // Lade Farben
+            UpdateColorLabels();
 
             UpdateValueLabels();
             UpdateSliderConstraints();
@@ -113,10 +118,12 @@ namespace bacneTPana.UI
             _config.ReadPropertyYellowThreshold = (int)ReadPropertyYellowThresholdSlider.Value;
             _config.ReadPropertyRedThreshold = (int)ReadPropertyRedThresholdSlider.Value;
 
+            // Farben werden bereits in _config gespeichert über die Color-Button-Click-Handler
+
             try
             {
                 _configService.SaveCOVThresholds(_config);
-                MessageBox.Show(
+                System.Windows.MessageBox.Show(
                     "Einstellungen erfolgreich gespeichert.",
                     "Erfolg",
                     MessageBoxButton.OK,
@@ -126,7 +133,7 @@ namespace bacneTPana.UI
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
+                System.Windows.MessageBox.Show(
                     $"Fehler beim Speichern der Einstellungen:\n{ex.Message}",
                     "Fehler",
                     MessageBoxButton.OK,
@@ -142,7 +149,7 @@ namespace bacneTPana.UI
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
+            var result = System.Windows.MessageBox.Show(
                 "Möchten Sie die Einstellungen auf die Standardwerte zurücksetzen?\n\n" +
                 "COV - Grün: 2, Gelb: 10, Orange: 30\n" +
                 "ReadProperty - Grün: 6, Gelb: 30, Orange: 60",
@@ -161,7 +168,322 @@ namespace bacneTPana.UI
                 ReadPropertyGreenThresholdSlider.Value = 6;
                 ReadPropertyYellowThresholdSlider.Value = 30;
                 ReadPropertyRedThresholdSlider.Value = 60;
+
+                // Reset colors
+                _config.GreenColor = "#28A745";
+                _config.YellowColor = "LightBlue";
+                _config.RedColor = "#FF9800";
+                _config.CriticalColor = "#C62828";
+                UpdateColorLabels();
             }
+        }
+
+        private void UpdateColorLabels()
+        {
+            if (GreenColorLabel != null)
+                GreenColorLabel.Foreground = ColorBrushFromString(_config.GreenColor);
+            if (GreenColorSwatch != null)
+                GreenColorSwatch.Background = ColorBrushFromString(_config.GreenColor);
+            if (YellowColorLabel != null)
+                YellowColorLabel.Foreground = ColorBrushFromString(_config.YellowColor);
+            if (YellowColorSwatch != null)
+                YellowColorSwatch.Background = ColorBrushFromString(_config.YellowColor);
+            if (RedColorLabel != null)
+                RedColorLabel.Foreground = ColorBrushFromString(_config.RedColor);
+            if (RedColorSwatch != null)
+                RedColorSwatch.Background = ColorBrushFromString(_config.RedColor);
+            if (CriticalColorLabel != null)
+                CriticalColorLabel.Foreground = ColorBrushFromString(_config.CriticalColor);
+            if (CriticalColorSwatch != null)
+                CriticalColorSwatch.Background = ColorBrushFromString(_config.CriticalColor);
+        }
+
+        private Brush ColorBrushFromString(string colorString)
+        {
+            try
+            {
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorString));
+            }
+            catch
+            {
+                return new SolidColorBrush(Colors.Gray);
+            }
+        }
+
+        private void GreenColorBorder_Click(object sender, MouseButtonEventArgs e)
+        {
+            SelectColor("Gut-Farbe wählen", _config.GreenColor, color => _config.GreenColor = color);
+        }
+
+        private void YellowColorBorder_Click(object sender, MouseButtonEventArgs e)
+        {
+            SelectColor("OK-Farbe wählen", _config.YellowColor, color => _config.YellowColor = color);
+        }
+
+        private void RedColorBorder_Click(object sender, MouseButtonEventArgs e)
+        {
+            SelectColor("Schlecht-Farbe wählen", _config.RedColor, color => _config.RedColor = color);
+        }
+
+        private void CriticalColorBorder_Click(object sender, MouseButtonEventArgs e)
+        {
+            SelectColor("Kritisch-Farbe wählen", _config.CriticalColor, color => _config.CriticalColor = color);
+        }
+
+        private void SelectColor(string title, string currentColor, System.Action<string> onColorSelected)
+        {
+            // Erstelle ein RGB-ColorPicker-Dialog-Fenster
+            var colorDialog = new Window
+            {
+                Title = title,
+                Width = 450,
+                Height = 300,
+                WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner,
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize
+            };
+
+            var mainPanel = new System.Windows.Controls.StackPanel
+            {
+                Margin = new Thickness(20, 20, 20, 0)
+            };
+
+            // Rot-Slider mit Label und Wert in einer Zeile
+            var redHeader = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                Margin = new Thickness(0, 0, 0, 3)
+            };
+            var redLabel = new System.Windows.Controls.TextBlock
+            {
+                Text = "Rot (R):",
+                Width = 80
+            };
+            var redValue = new System.Windows.Controls.TextBlock
+            {
+                Text = "128",
+                Margin = new Thickness(10, 0, 0, 0)
+            };
+            redHeader.Children.Add(redLabel);
+            redHeader.Children.Add(redValue);
+
+            var redSlider = new System.Windows.Controls.Slider
+            {
+                Minimum = 0,
+                Maximum = 255,
+                Value = 128,
+                TickFrequency = 1,
+                IsSnapToTickEnabled = true,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+
+            // Grün-Slider mit Label und Wert in einer Zeile
+            var greenHeader = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                Margin = new Thickness(0, 0, 0, 3)
+            };
+            var greenLabel = new System.Windows.Controls.TextBlock
+            {
+                Text = "Grün (G):",
+                Width = 80
+            };
+            var greenValue = new System.Windows.Controls.TextBlock
+            {
+                Text = "128",
+                Margin = new Thickness(10, 0, 0, 0)
+            };
+            greenHeader.Children.Add(greenLabel);
+            greenHeader.Children.Add(greenValue);
+
+            var greenSlider = new System.Windows.Controls.Slider
+            {
+                Minimum = 0,
+                Maximum = 255,
+                Value = 128,
+                TickFrequency = 1,
+                IsSnapToTickEnabled = true,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+
+            // Blau-Slider mit Label und Wert in einer Zeile
+            var blueHeader = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                Margin = new Thickness(0, 0, 0, 3)
+            };
+            var blueLabel = new System.Windows.Controls.TextBlock
+            {
+                Text = "Blau (B):",
+                Width = 80
+            };
+            var blueValue = new System.Windows.Controls.TextBlock
+            {
+                Text = "128",
+                Margin = new Thickness(10, 0, 0, 0)
+            };
+            blueHeader.Children.Add(blueLabel);
+            blueHeader.Children.Add(blueValue);
+
+            var blueSlider = new System.Windows.Controls.Slider
+            {
+                Minimum = 0,
+                Maximum = 255,
+                Value = 128,
+                TickFrequency = 1,
+                IsSnapToTickEnabled = true,
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+
+            // Hex-Label für Farb-Vorschau
+            var hexLabel = new System.Windows.Controls.TextBlock
+            {
+                Text = "#808080",
+                FontWeight = FontWeights.Bold,
+                FontSize = 14,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = Brushes.White
+            };
+
+            // Farb-Vorschau mit Hex-Label darin
+            var previewBorder = new System.Windows.Controls.Border
+            {
+                Height = 40,
+                Margin = new Thickness(0, 0, 0, 0),
+                BorderBrush = Brushes.Gray,
+                BorderThickness = new Thickness(2),
+                Background = new SolidColorBrush(Color.FromRgb(128, 128, 128)),
+                Child = hexLabel
+            };
+
+            // Setze Startfarbe anhand der aktuellen Farbe
+            var initialColor = TryParseColor(currentColor);
+            redSlider.Value = initialColor.R;
+            greenSlider.Value = initialColor.G;
+            blueSlider.Value = initialColor.B;
+
+            // Update-Funktion
+            System.Action updatePreview = () =>
+            {
+                byte r = (byte)redSlider.Value;
+                byte g = (byte)greenSlider.Value;
+                byte b = (byte)blueSlider.Value;
+
+                redValue.Text = r.ToString();
+                greenValue.Text = g.ToString();
+                blueValue.Text = b.ToString();
+
+                var bgColor = Color.FromRgb(r, g, b);
+                previewBorder.Background = new SolidColorBrush(bgColor);
+                hexLabel.Text = $"#{r:X2}{g:X2}{b:X2}";
+
+                // Text-Farbe für bessere Lesbarkeit anpassen
+                var brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+                hexLabel.Foreground = brightness > 128 ? Brushes.Black : Brushes.White;
+            };
+
+            redSlider.ValueChanged += (s, e) => updatePreview();
+            greenSlider.ValueChanged += (s, e) => updatePreview();
+            blueSlider.ValueChanged += (s, e) => updatePreview();
+
+            updatePreview();
+
+            // Buttons
+            var buttonPanel = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 5, 0, 5)
+            };
+
+            var okButton = new System.Windows.Controls.Button
+            {
+                Content = "OK",
+                Width = 80,
+                Margin = new Thickness(0, 0, 10, 0),
+                Padding = new Thickness(10, 5, 10, 5)
+            };
+
+            var cancelButton = new System.Windows.Controls.Button
+            {
+                Content = "Abbrechen",
+                Width = 80,
+                Padding = new Thickness(10, 5, 10, 5)
+            };
+
+            okButton.Click += (s, e) =>
+            {
+                byte r = (byte)redSlider.Value;
+                byte g = (byte)greenSlider.Value;
+                byte b = (byte)blueSlider.Value;
+                var hexColor = $"#{r:X2}{g:X2}{b:X2}";
+                onColorSelected(hexColor);
+                UpdateColorLabels();
+                colorDialog.DialogResult = true;
+                colorDialog.Close();
+            };
+
+            cancelButton.Click += (s, e) =>
+            {
+                colorDialog.DialogResult = false;
+                colorDialog.Close();
+            };
+
+            buttonPanel.Children.Add(okButton);
+            buttonPanel.Children.Add(cancelButton);
+
+            // Alle Controls hinzufügen
+            mainPanel.Children.Add(redHeader);
+            mainPanel.Children.Add(redSlider);
+            mainPanel.Children.Add(greenHeader);
+            mainPanel.Children.Add(greenSlider);
+            mainPanel.Children.Add(blueHeader);
+            mainPanel.Children.Add(blueSlider);
+            mainPanel.Children.Add(previewBorder);
+
+            var scrollViewer = new System.Windows.Controls.ScrollViewer
+            {
+                Content = mainPanel,
+                VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto
+            };
+
+            var root = new System.Windows.Controls.DockPanel
+            {
+                LastChildFill = true,
+                Margin = new Thickness(10, 10, 10, 5)
+            };
+
+            System.Windows.Controls.DockPanel.SetDock(buttonPanel, System.Windows.Controls.Dock.Bottom);
+            root.Children.Add(buttonPanel);
+            root.Children.Add(scrollViewer);
+
+            colorDialog.Content = root;
+            colorDialog.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Escape)
+                {
+                    colorDialog.DialogResult = false;
+                    colorDialog.Close();
+                }
+            };
+            colorDialog.ShowDialog();
+        }
+
+        private Color TryParseColor(string colorString)
+        {
+            try
+            {
+                var colorObj = ColorConverter.ConvertFromString(colorString);
+                if (colorObj is Color color)
+                    return color;
+            }
+            catch
+            {
+                // ignore
+            }
+
+            return Colors.Gray;
         }
     }
 }

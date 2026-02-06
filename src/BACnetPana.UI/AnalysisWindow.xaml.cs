@@ -1,4 +1,5 @@
-﻿using bacneTPana.Models;
+﻿using bacneTPana.Core;
+using bacneTPana.Models;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -19,11 +20,16 @@ namespace bacneTPana.UI
         private readonly PlotController _noWheelController = new PlotController();
         private readonly string _activeFilter;
         private DispatcherTimer? _debounceTimer;
+        private readonly ConfigurationService _configService;
+        private COVThresholdConfig _covConfig;
+
         public AnalysisWindow(List<NetworkPacket> packets, string activeFilter, BACnetDatabase? bacnetDatabase = null)
         {
             InitializeComponent();
             _packets = packets ?? new List<NetworkPacket>();
             _activeFilter = activeFilter ?? string.Empty;
+            _configService = new ConfigurationService();
+            _covConfig = _configService.LoadCOVThresholds();
 
             ConfigurePlotController();
 
@@ -439,10 +445,45 @@ namespace bacneTPana.UI
 
         private Brush GetAmpelBrush(double percent)
         {
-            // ðŸŸ¢ GrÃ¼n < 1%, ðŸŸ¡ Gelb 1â€“3%, ðŸ”´ Rot > 3%
-            if (percent < 1.0) return new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // GrÃ¼n
-            if (percent <= 3.0) return new SolidColorBrush(Color.FromRgb(0xFF, 0xC1, 0x07)); // Gelb
-            return new SolidColorBrush(Color.FromRgb(0xD1, 0x34, 0x38)); // Rot
+            // 🟢 Grün < 1%, 🟡 Gelb 1–3%, 🔴 Rot > 3%
+            Brush brush;
+            if (percent < 1.0)
+                brush = new SolidColorBrush(HexToColor(_covConfig.GreenColor));
+            else if (percent <= 3.0)
+                brush = new SolidColorBrush(HexToColor(_covConfig.YellowColor));
+            else
+                brush = new SolidColorBrush(HexToColor(_covConfig.RedColor));
+            return brush;
+        }
+
+        private Color HexToColor(string hexColor)
+        {
+            try
+            {
+                // Entferne das # wenn vorhanden
+                if (hexColor.StartsWith("#"))
+                    hexColor = hexColor.Substring(1);
+
+                // Versuche als Hex-Farbe zu parsen
+                if (hexColor.Length == 6 && int.TryParse(hexColor, System.Globalization.NumberStyles.HexNumber, null, out var hexValue))
+                {
+                    byte r = (byte)((hexValue >> 16) & 0xFF);
+                    byte g = (byte)((hexValue >> 8) & 0xFF);
+                    byte b = (byte)(hexValue & 0xFF);
+                    return Color.FromRgb(r, g, b);
+                }
+            }
+            catch { }
+
+            // Fallback: Versuche Named Color
+            try
+            {
+                return (Color)ColorConverter.ConvertFromString(hexColor);
+            }
+            catch
+            {
+                return Colors.Gray; // Fallback-Farbe
+            }
         }
 
         private List<DataPoint> CalculatePacketsPerSecond(List<NetworkPacket> packets, DateTime startTime, DateTime endTime)
@@ -565,5 +606,3 @@ namespace bacneTPana.UI
 
     }
 }
-
-

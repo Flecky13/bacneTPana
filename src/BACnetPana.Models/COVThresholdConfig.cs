@@ -36,6 +36,26 @@ namespace bacneTPana.Models
         public int ReadPropertyRedThreshold { get; set; } = 60;
 
         /// <summary>
+        /// Farbe für grüne Ampel (Gut) - Standard: #28A745
+        /// </summary>
+        public string GreenColor { get; set; } = "#28A745";
+
+        /// <summary>
+        /// Farbe für gelbe Ampel (OK) - Standard: LightBlue
+        /// </summary>
+        public string YellowColor { get; set; } = "LightBlue";
+
+        /// <summary>
+        /// Farbe für orange Ampel (Schlecht) - Standard: #FF9800
+        /// </summary>
+        public string RedColor { get; set; } = "#FF9800";
+
+        /// <summary>
+        /// Farbe für rote Ampel (Kritisch) - Standard: #C62828
+        /// </summary>
+        public string CriticalColor { get; set; } = "#C62828";
+
+        /// <summary>
         /// Bestimmt die Ampel-Bewertung basierend auf dem Durchschnittswert pro Minute
         /// </summary>
         /// <param name="averagePerMinute">Durchschnittliche COV Notifications pro Minute</param>
@@ -85,16 +105,31 @@ namespace bacneTPana.Models
         }
 
         /// <summary>
-        /// Gibt die Farbe für die Ampel basierend auf dem Status zurück
+        /// Gibt die Farbe für die Ampel basierend auf dem Status zurück (statische Version mit Standardfarben)
         /// </summary>
         public static string GetStatusColor(TrafficLightStatus status)
         {
             return status switch
             {
                 TrafficLightStatus.Green => "#28A745",    // Grün
-                TrafficLightStatus.Yellow => "#FFC107",   // Gelb
+                TrafficLightStatus.Yellow => "LightBlue",   // LightBlue
                 TrafficLightStatus.Red => "#FF9800",       // Orange
                 TrafficLightStatus.Critical => "#C62828",  // Rot (Kritisch)
+                _ => "#666666"                             // Grau
+            };
+        }
+
+        /// <summary>
+        /// Gibt die Farbe für die Ampel basierend auf dem Status zurück (verwendet konfigurierte Farben)
+        /// </summary>
+        public string GetStatusColorFromConfig(TrafficLightStatus status)
+        {
+            return status switch
+            {
+                TrafficLightStatus.Green => GreenColor,
+                TrafficLightStatus.Yellow => YellowColor,
+                TrafficLightStatus.Red => RedColor,
+                TrafficLightStatus.Critical => CriticalColor,
                 _ => "#666666"                             // Grau
             };
         }
