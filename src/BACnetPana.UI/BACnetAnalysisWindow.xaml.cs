@@ -520,7 +520,7 @@ namespace bacneTPana.UI
                 })
                 .ToList();
             _topDevicesForHover = topDevices;
-            var barHeight = 22;
+            var barHeight = 35;
             var desiredHeight = Math.Max(10, topDevices.Count) * barHeight;
 
             var topDevicesModel = new PlotModel
@@ -534,7 +534,8 @@ namespace bacneTPana.UI
                 Position = AxisPosition.Left,
                 ItemsSource = topDevices,
                 LabelField = "Device",
-                GapWidth = 0.5
+                GapWidth = 0.35,
+                MajorTickSize = 8
             };
             topDevicesModel.Axes.Add(categoryAxis);
 
@@ -574,7 +575,7 @@ namespace bacneTPana.UI
                 FillColor = OxyColor.FromRgb(23, 162, 184),
                 StrokeColor = OxyColor.FromRgb(18, 130, 147),
                 StrokeThickness = 1,
-                BarWidth = 0.6,
+                BarWidth = 1.2,
                 LabelPlacement = LabelPlacement.Inside,
                 LabelMargin = 2,
                 TextColor = OxyColors.White
@@ -862,7 +863,7 @@ namespace bacneTPana.UI
             var maxReadPropCount = topReadPropsWithRate.Max(x => x.Count);
             var dotX = -Math.Max(1, maxReadPropCount * 0.06);
 
-            var barHeight = 22;
+            var barHeight = 35;
             var desiredHeight = Math.Max(10, topReadPropsWithRate.Count) * barHeight;
 
             var model = new PlotModel
@@ -876,7 +877,8 @@ namespace bacneTPana.UI
                 Position = AxisPosition.Left,
                 ItemsSource = topReadPropsWithRate,
                 LabelField = "Label",
-                GapWidth = 0.5
+                GapWidth = 0.35,
+                MajorTickSize = 8
             };
             model.Axes.Add(categoryAxis);
 
@@ -903,7 +905,7 @@ namespace bacneTPana.UI
                 FillColor = OxyColor.FromRgb(111, 66, 193),
                 StrokeColor = OxyColor.FromRgb(90, 54, 157),
                 StrokeThickness = 1,
-                BarWidth = 0.6,
+                BarWidth = 1.2,
                 LabelPlacement = LabelPlacement.Inside,
                 LabelMargin = 2,
                 TextColor = OxyColors.White
@@ -1153,7 +1155,7 @@ namespace bacneTPana.UI
             var maxCount = topCovWithRate.Max(x => x.Count);
             var dotX = -Math.Max(1, maxCount * 0.06);
 
-            var barHeight = 22;
+            var barHeight = 35;
             var desiredHeight = Math.Max(10, topCovWithRate.Count) * barHeight;
 
             var model = new PlotModel
@@ -1167,7 +1169,8 @@ namespace bacneTPana.UI
                 Position = AxisPosition.Left,
                 ItemsSource = topCovWithRate,
                 LabelField = "Label",
-                GapWidth = 0.5,
+                GapWidth = 0.35,
+                MajorTickSize = 8,
                 FontSize = 14
             };
             model.Axes.Add(categoryAxis);
@@ -1195,7 +1198,7 @@ namespace bacneTPana.UI
                 FillColor = OxyColor.FromRgb(230, 126, 34),  // Orange für COV
                 StrokeColor = OxyColor.FromRgb(200, 100, 20),
                 StrokeThickness = 1,
-                BarWidth = 0.6,
+                BarWidth = 1.2,
                 LabelPlacement = LabelPlacement.Inside,
                 LabelMargin = 2,
                 TextColor = OxyColors.White
