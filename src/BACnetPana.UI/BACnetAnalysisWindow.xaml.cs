@@ -520,7 +520,7 @@ namespace bacneTPana.UI
                 })
                 .ToList();
             _topDevicesForHover = topDevices;
-            var barHeight = 35;
+            var barHeight = 30;
             var desiredHeight = Math.Max(10, topDevices.Count) * barHeight;
 
             var topDevicesModel = new PlotModel
@@ -863,7 +863,7 @@ namespace bacneTPana.UI
             var maxReadPropCount = topReadPropsWithRate.Max(x => x.Count);
             var dotX = -Math.Max(1, maxReadPropCount * 0.06);
 
-            var barHeight = 35;
+            var barHeight = 30;
             var desiredHeight = Math.Max(10, topReadPropsWithRate.Count) * barHeight;
 
             var model = new PlotModel
@@ -1155,7 +1155,7 @@ namespace bacneTPana.UI
             var maxCount = topCovWithRate.Max(x => x.Count);
             var dotX = -Math.Max(1, maxCount * 0.06);
 
-            var barHeight = 35;
+            var barHeight = 30;
             var desiredHeight = Math.Max(10, topCovWithRate.Count) * barHeight;
 
             var model = new PlotModel
