@@ -25,6 +25,7 @@ mono_crash.*
 [Rr]eleases/
 [Aa]rchive/
 [Ii]nstaller/
+[Ii]nstallation
 
 [Dd]ebug/x64/
 [Dd]ebugPublic/x64/
